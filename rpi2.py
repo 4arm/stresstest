@@ -7,30 +7,25 @@ import socket
 app = Flask(__name__)
 CORS(app)
 
+# Get device hostname and IP
+hostname = socket.gethostname()
+ip_address = socket.gethostbyname(hostname)
+
 def get_system_info():
-    temp = "N/A"
     try:
-        temps = psutil.sensors_temperatures()
-        for key in temps:
-            if temps[key]:  # Get the first available sensor
-                temp = temps[key][0].current
-                break
-    except Exception as e:
-        print(f"Temperature Error: {e}")
-
-    return {
-        "cpu_usage": psutil.cpu_percent(interval=1),
-        "temperature": temp,
-        "ram_used": psutil.virtual_memory().used // (1024 * 1024),  # Convert to MB
-        "network_speed": get_network_speed()
-    }
-
-def get_network_speed():
-    try:
-        output = subprocess.check_output("cat /sys/class/net/eth0/speed", shell=True)
-        return output.decode().strip() + " Mbps"
+        temp = psutil.sensors_temperatures().get('cpu_thermal', [{}])[0].get('current', "N/A")
     except:
-        return "N/A"
+        temp = "N/A"
+
+    net_io = psutil.net_io_counters()
+    return {
+        "hostname": hostname,
+        "ip": ip_address,
+        "cpu_usage": psutil.cpu_percent(),
+        "ram_used": psutil.virtual_memory().used // (1024 * 1024),  # Convert to MB
+        "temperature": temp,
+        "network_speed": round((net_io.bytes_sent + net_io.bytes_recv) / (1024 * 1024), 2)  # Convert to MB/s
+    }
 
 @app.route('/data', methods=['GET'])
 def data():
@@ -38,24 +33,21 @@ def data():
 
 @app.route('/start_test', methods=['POST'])
 def start_test():
-    data = request.json
+    data = request.get_json()
     test_type = data.get("test_type")
 
     if test_type == "RAM":
         ram_size = data.get("ram_size", "100M")
         iterations = data.get("iterations", "1")
-        command = f"sudo memtester {ram_size} {iterations}"
+        cmd = f"memtester {ram_size} {iterations}"
     else:
         return jsonify({"error": "Invalid test type"}), 400
 
     try:
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
-        return jsonify({"output": output.decode()})
-    except subprocess.CalledProcessError as e:
-        return jsonify({"error": str(e.output.decode())})
-
-def get_ip():
-    return socket.gethostbyname(socket.gethostname())
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        return jsonify({"output": result.stdout if result.stdout else result.stderr})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host=get_ip(), port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)
