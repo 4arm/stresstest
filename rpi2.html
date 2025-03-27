@@ -101,9 +101,15 @@
         function stressTest(ip) {
             const duration = document.getElementById(`duration-${ip}`).value || 20;
             const notification = document.getElementById(`notification-${ip}`);
+            const stressButton = document.getElementById(`stress-btn-${ip}`);
+            const stopButton = document.getElementById(`stop-btn-${ip}`);
+
+            // Disable stress test button & enable stop button
+            stressButton.disabled = true;
+            stopButton.disabled = false;
 
             notification.innerText = `Stress test starting for ${duration} seconds...`;
-            
+
             fetch(`http://${ip}:5000/stress`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -117,14 +123,36 @@
             .catch(err => console.log(err));
         }
 
+        function stopStressTest(ip) {
+            const notification = document.getElementById(`notification-${ip}`);
+            const stressButton = document.getElementById(`stress-btn-${ip}`);
+            const stopButton = document.getElementById(`stop-btn-${ip}`);
+
+            fetch(`http://${ip}:5000/stop_stress`, {
+                method: "POST"
+            })
+            .then(response => response.json())
+            .then(data => {
+                notification.innerText = "Stress test stopped!";
+                clearInterval(countdownTimers[ip]); // Stop countdown
+                stressButton.disabled = false; // Re-enable stress button
+                stopButton.disabled = true; // Disable stop button
+            })
+            .catch(err => console.log(err));
+        }
+
+        let countdownTimers = {}; 
+
         function startCountdown(ip, duration) {
             const notification = document.getElementById(`notification-${ip}`);
             let timeLeft = duration;
 
-            const interval = setInterval(() => {
+            countdownTimers[ip] = setInterval(() => {
                 if (timeLeft <= 0) {
-                    clearInterval(interval);
+                    clearInterval(countdownTimers[ip]);
                     notification.innerText = "Stress test completed!";
+                    document.getElementById(`stress-btn-${ip}`).disabled = false; // Re-enable stress button
+                    document.getElementById(`stop-btn-${ip}`).disabled = true; // Disable stop button
                     return;
                 }
                 notification.innerText = `Stress test running... ${timeLeft}s left`;
@@ -144,7 +172,8 @@
                         <p>Temperature: <span id="temp-${device.ip}" class="status">Loading...</span></p>
                         <p>Stress Test: <span id="stress-status-${device.ip}" class="status">Idle</span></p>
                         <input type="number" id="duration-${device.ip}" placeholder="20" min="5" max="60"> sec
-                        <button class="btn" onclick="stressTest('${device.ip}')">Stress Test CPU</button>
+                        <button class="btn" id="stress-btn-${device.ip}" onclick="stressTest('${device.ip}')">Stress Test CPU</button>
+                        <button class="btn" id="stop-btn-${device.ip}" onclick="stopStressTest('${device.ip}')" disabled>Stop Test</button>
                         <p id="notification-${device.ip}"></p>
                     </div>
                 `;
@@ -153,6 +182,7 @@
 
         generateDeviceGrid();
         setInterval(updateStats, 2000);
+
     </script>
 </body>
 </html>
