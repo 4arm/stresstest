@@ -5,6 +5,7 @@ import subprocess
 import socket
 import time
 import shlex
+import threading
 
 app = Flask(__name__)
 CORS(app)
@@ -14,6 +15,8 @@ ip_address = socket.gethostbyname(hostname)
 
 prev_net_io = psutil.net_io_counters()
 prev_time = time.time()
+
+stress_running = False  # Global flag to track stress status
 
 def get_temperature():
     try:
@@ -44,9 +47,6 @@ def get_system_info():
     net_speed = round(((current_net_io.bytes_sent + current_net_io.bytes_recv) - 
                        (prev_net_io.bytes_sent + prev_net_io.bytes_recv)) / (1024 * 1024 * time_diff), 2)
 
-    prev_net_io = current_net_io
-    prev_time = current_time
-
     return {
         "hostname": hostname,
         "ip": ip_address,
@@ -54,7 +54,8 @@ def get_system_info():
         "ram_used": psutil.virtual_memory().used // (1024 * 1024),
         "temperature": get_temperature(),
         "network_speed": net_speed,
-        "iperf3_stats": get_iperf3_stats()  # Get iPerf3 live stats
+        "iperf3_stats": get_iperf3_stats(),
+        "stress_running": stress_running  # Return stress status
     }
 
 @app.route('/data', methods=['GET'])
@@ -63,10 +64,27 @@ def data():
 
 @app.route('/stress', methods=['POST'])
 def stress_cpu():
+    global stress_running
+
     try:
-        subprocess.Popen(["stress-ng", "--cpu", "4", "--timeout", "20s"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return jsonify({"message": "CPU stress test started!"})
+        data = request.get_json()
+        duration = int(data.get("duration", 20))  # Default to 20 seconds if not provided
+
+        if stress_running:
+            return jsonify({"message": "Stress test already running!"}), 400
+
+        stress_running = True
+
+        def run_stress():
+            global stress_running
+            subprocess.run(["stress-ng", "--cpu", "4", "--timeout", f"{duration}s"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stress_running = False  # Reset flag after test completes
+
+        threading.Thread(target=run_stress).start()
+        return jsonify({"message": f"CPU stress test started for {duration} seconds!"})
+    
     except Exception as e:
+        stress_running = False
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
