@@ -61,5 +61,13 @@ def get_system_info():
 def data():
     return jsonify(get_system_info())
 
+@app.route('/stress', methods=['POST'])
+def stress_cpu():
+    try:
+        subprocess.Popen(["stress-ng", "--cpu", "4", "--timeout", "20s"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return jsonify({"message": "CPU stress test started!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
