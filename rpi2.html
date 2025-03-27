@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Monitor</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; text-align: center; }
+        h1, h2 { color: #333; }
+        #deviceGrid { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; }
+        .device { background: white; border-radius: 10px; padding: 15px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2); width: 250px; }
+        .device h3 { color: #007bff; }
+        .device p { margin: 5px 0; }
+        .status { font-weight: bold; padding: 3px 6px; border-radius: 5px; display: inline-block; }
+        .good { background: #28a745; color: white; }
+        .warn { background: #ffc107; color: black; }
+        .bad { background: #dc3545; color: white; }
+        select, input, button { margin: 5px; padding: 10px; font-size: 16px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Connected Devices</h1>
+    <div id="deviceGrid"></div>
+
+    <h2>Run Tests</h2>
+    <select id="deviceSelect">
+        <option value="">Select Device</option>
+    </select>
+    <select id="testType">
+        <option value="RAM">RAM Test</option>
+    </select>
+    <input type="text" id="ramSize" placeholder="RAM Size (e.g., 100M)">
+    <input type="text" id="iterations" placeholder="Iterations">
+    <button onclick="startTest()">Start Test</button>
+    <p id="testOutput"></p>
+
+    <script>
+        let devices = [
+            { ip: "172.18.18.20", name: "RaspberryPi-1" },
+            // { ip: "172.16.20.109", name: "RaspberryPi-2" }
+        ];
+
+        function updateDeviceList() {
+            let deviceGrid = document.getElementById("deviceGrid");
+            let deviceSelect = document.getElementById("deviceSelect");
+
+            deviceGrid.innerHTML = "";
+            deviceSelect.innerHTML = `<option value="">Select Device</option>`; // Reset dropdown
+
+            devices.forEach(device => {
+                let div = document.createElement("div");
+                div.className = "device";
+                div.innerHTML = `
+                    <h3>${device.name} (${device.ip})</h3>
+                    <p>CPU: <span id="cpu-${device.ip}" class="status">N/A</span>%</p>
+                    <p>Temp: <span id="temp-${device.ip}" class="status">N/A</span>°C</p>
+                    <p>RAM: <span id="ram-${device.ip}" class="status">N/A</span>MB</p>
+                    <p>Network: <span id="net-${device.ip}" class="status">N/A</span>MB/s</p>
+                `;
+                deviceGrid.appendChild(div);
+
+                // Add to dropdown
+                let option = document.createElement("option");
+                option.value = device.ip;
+                option.textContent = device.name;
+                deviceSelect.appendChild(option);
+            });
+        }
+
+        function updateStats() {
+            devices.forEach(device => {
+                fetch(`http://${device.ip}:5000/data`)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById(`cpu-${device.ip}`).innerText = data.cpu_usage;
+                        document.getElementById(`temp-${device.ip}`).innerText = data.temperature;
+                        document.getElementById(`ram-${device.ip}`).innerText = data.ram_used;
+                        document.getElementById(`net-${device.ip}`).innerText = data.network_speed;
+
+                        updateStatusColor(`cpu-${device.ip}`, data.cpu_usage, 50, 80);
+                        updateStatusColor(`temp-${device.ip}`, data.temperature, 50, 80);
+                        updateStatusColor(`ram-${device.ip}`, data.ram_used, 1024, 2048);
+                    })
+                    .catch(err => console.log(`Device ${device.ip} not responding`));
+            });
+        }
+
+        function updateStatusColor(id, value, warnLimit, badLimit) {
+            let el = document.getElementById(id);
+            if (!el) return;
+            if (value === "N/A") {
+                el.className = "status bad";
+            } else if (value > badLimit) {
+                el.className = "status bad";
+            } else if (value > warnLimit) {
+                el.className = "status warn";
+            } else {
+                el.className = "status good";
+            }
+        }
+
+        function startTest() {
+            let selectedDevice = document.getElementById("deviceSelect").value;
+            if (!selectedDevice) {
+                alert("Please select a device to test.");
+                return;
+            }
+
+            let testType = document.getElementById("testType").value;
+            let ramSize = document.getElementById("ramSize").value || "100M";
+            let iterations = document.getElementById("iterations").value || "1";
+
+            let body = { test_type: testType };
+            if (testType === "RAM") {
+                body.ram_size = ramSize;
+                body.iterations = iterations;
+            }
+
+            fetch(`http://${selectedDevice}:5000/start_test`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("testOutput").textContent = data.output || "Test failed.";
+            });
+        }
+
+        updateDeviceList();
+        setInterval(updateStats, 1000);
+    </script>
+</body>
+</html>
