@@ -17,23 +17,29 @@ ip_address = socket.gethostbyname(hostname)
 prev_net_io = psutil.net_io_counters()
 prev_time = time.time()
 
+def get_temperature():
+    """ Get CPU temperature from available sensors """
+    try:
+        sensors = psutil.sensors_temperatures()
+        for key in sensors:  # Try different sensor keys
+            if sensors[key]:
+                return sensors[key][0].current
+    except Exception:
+        pass
+    return "Unavailable"
+
 def get_system_info():
     global prev_net_io, prev_time
-    
-    # CPU Temperature Handling
-    try:
-        temp = psutil.sensors_temperatures().get('cpu_thermal', [{}])[0].get('current', "N/A")
-    except:
-        temp = "N/A"
 
     # Real-time Network Speed Calculation
     current_net_io = psutil.net_io_counters()
     current_time = time.time()
-    
-    time_diff = current_time - prev_time if current_time != prev_time else 1
+    time_diff = max(current_time - prev_time, 1)  # Avoid division by zero
+
     net_speed = round(((current_net_io.bytes_sent + current_net_io.bytes_recv) - 
                        (prev_net_io.bytes_sent + prev_net_io.bytes_recv)) / (1024 * 1024 * time_diff), 2)
-    
+
+    # Update previous values for next calculation
     prev_net_io = current_net_io
     prev_time = current_time
 
@@ -42,8 +48,8 @@ def get_system_info():
         "ip": ip_address,
         "cpu_usage": psutil.cpu_percent(),
         "ram_used": psutil.virtual_memory().used // (1024 * 1024),  # Convert to MB
-        "temperature": temp,
-        "network_speed": net_speed  # Real-time speed in MB/s
+        "temperature": get_temperature(),
+        "network_speed": net_speed if prev_time != time.time() else "Calculating..."  # Handle first request
     }
 
 @app.route('/data', methods=['GET'])
