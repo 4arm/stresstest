@@ -14,7 +14,8 @@ ip_address = socket.gethostbyname(hostname)
 
 prev_net_io = psutil.net_io_counters()
 prev_time = time.time()
-stress_running = False  # Track stress test status
+stress_running = False
+stress_report = None  # Store the last stress test report
 
 def get_temperature():
     """Get system temperature (if available)"""
@@ -48,7 +49,7 @@ def get_system_info():
         "ram_used": psutil.virtual_memory().used // (1024 * 1024),
         "temperature": get_temperature(),
         "network_speed": net_speed,
-        "stress_running": stress_running  # Send stress test status to frontend
+        "stress_running": stress_running
     }
 
 @app.route('/data', methods=['GET'])
@@ -59,18 +60,43 @@ def data():
 @app.route('/stress', methods=['POST'])
 def stress_test():
     """Start stress-ng CPU test with user-defined duration"""
-    global stress_running
+    global stress_running, stress_report
 
     if stress_running:
         return jsonify({"message": "Stress test is already running"}), 400
 
     data = request.get_json()
-    duration = data.get("duration", 20)  # Default to 20 seconds if not provided
+    duration = int(data.get("duration", 20))  # Default to 20 seconds if not provided
 
+    # Record system stats before starting
+    start_stats = get_system_info()
+    
     try:
         stress_running = True
         subprocess.Popen(["stress-ng", "--cpu", "4", "--timeout", f"{duration}s"])  # Start stress test
-        return jsonify({"message": f"Stress test started for {duration} seconds"}), 200
+        time.sleep(duration)  # Wait for completion
+        
+        # Record system stats after completion
+        end_stats = get_system_info()
+        
+        # Generate stress test report
+        stress_report = {
+            "duration": duration,
+            "start": {
+                "cpu_usage": start_stats["cpu_usage"],
+                "ram_used": start_stats["ram_used"],
+                "temperature": start_stats["temperature"]
+            },
+            "end": {
+                "cpu_usage": end_stats["cpu_usage"],
+                "ram_used": end_stats["ram_used"],
+                "temperature": end_stats["temperature"]
+            },
+            "message": "Stress test completed!"
+        }
+
+        stress_running = False
+        return jsonify({"message": f"Stress test completed in {duration} seconds"}), 200
     except Exception as e:
         stress_running = False
         return jsonify({"error": str(e)}), 500
@@ -89,6 +115,13 @@ def stop_stress():
         return jsonify({"message": "Stress test stopped successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/report', methods=['GET'])
+def get_report():
+    """Return the last stress test report"""
+    if stress_report:
+        return jsonify(stress_report)
+    return jsonify({"message": "No stress test report available"}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
