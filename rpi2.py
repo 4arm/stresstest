@@ -4,7 +4,7 @@ import psutil
 import subprocess
 import socket
 import time
-import shlex
+import threading
 
 app = Flask(__name__)
 CORS(app)
@@ -15,10 +15,10 @@ ip_address = socket.gethostbyname(hostname)
 prev_net_io = psutil.net_io_counters()
 prev_time = time.time()
 stress_running = False
-stress_report = None  # Store the last stress test report
+stress_report = None
+network_test_running = False  # Flag to prevent multiple network tests
 
 def get_temperature():
-    """Get system temperature (if available)"""
     try:
         sensors = psutil.sensors_temperatures()
         for key in sensors:
@@ -29,7 +29,6 @@ def get_temperature():
     return "Unavailable"
 
 def get_system_info():
-    """Fetch system stats including CPU, RAM, temperature, and network speed"""
     global prev_net_io, prev_time, stress_running
 
     current_net_io = psutil.net_io_counters()
@@ -54,74 +53,34 @@ def get_system_info():
 
 @app.route('/data', methods=['GET'])
 def data():
-    """Return system info"""
     return jsonify(get_system_info())
 
-@app.route('/stress', methods=['POST'])
-def stress_test():
-    """Start stress-ng CPU test with user-defined duration"""
-    global stress_running, stress_report
-
-    if stress_running:
-        return jsonify({"message": "Stress test is already running"}), 400
+@app.route('/network_test', methods=['POST'])
+def network_test():
+    global network_test_running
+    if network_test_running:
+        return jsonify({"message": "Network test is already running"}), 400
 
     data = request.get_json()
-    duration = int(data.get("duration", 20))  # Default to 20 seconds if not provided
+    target_ip = data.get("target_ip")
 
-    # Record system stats before starting
-    start_stats = get_system_info()
-    
-    try:
-        stress_running = True
-        subprocess.Popen(["stress-ng", "--cpu", "4", "--timeout", f"{duration}s"])  # Start stress test
-        time.sleep(duration)  # Wait for completion
-        
-        # Record system stats after completion
-        end_stats = get_system_info()
-        
-        # Generate stress test report
-        stress_report = {
-            "duration": duration,
-            "start": {
-                "cpu_usage": start_stats["cpu_usage"],
-                "ram_used": start_stats["ram_used"],
-                "temperature": start_stats["temperature"]
-            },
-            "end": {
-                "cpu_usage": end_stats["cpu_usage"],
-                "ram_used": end_stats["ram_used"],
-                "temperature": end_stats["temperature"]
-            },
-            "message": "Stress test completed!"
-        }
+    if not target_ip:
+        return jsonify({"error": "Target IP is required"}), 400
 
-        stress_running = False
-        return jsonify({"message": f"Stress test completed in {duration} seconds"}), 200
-    except Exception as e:
-        stress_running = False
-        return jsonify({"error": str(e)}), 500
+    def run_iperf():
+        global network_test_running
+        network_test_running = True
+        try:
+            result = subprocess.run(["iperf3", "-c", target_ip, "-J"], capture_output=True, text=True)
+            network_test_running = False
+            return jsonify({"result": result.stdout})
+        except Exception as e:
+            network_test_running = False
+            return jsonify({"error": str(e)}), 500
 
-@app.route('/stop_stress', methods=['POST'])
-def stop_stress():
-    """Stop stress-ng CPU test"""
-    global stress_running
-
-    if not stress_running:
-        return jsonify({"message": "No stress test is running"}), 400
-
-    try:
-        subprocess.run(["pkill", "-f", "stress-ng"])  # Kill any running stress-ng process
-        stress_running = False
-        return jsonify({"message": "Stress test stopped successfully"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/report', methods=['GET'])
-def get_report():
-    """Return the last stress test report"""
-    if stress_report:
-        return jsonify(stress_report)
-    return jsonify({"message": "No stress test report available"}), 404
+    thread = threading.Thread(target=run_iperf)
+    thread.start()
+    return jsonify({"message": f"Network test started with {target_ip}"}), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
