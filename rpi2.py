@@ -4,7 +4,6 @@ import psutil
 import subprocess
 import socket
 import time
-import shlex
 
 app = Flask(__name__)
 CORS(app)
@@ -16,6 +15,7 @@ prev_net_io = psutil.net_io_counters()
 prev_time = time.time()
 stress_running = False
 stress_report = None  # Store the last stress test report
+network_report = None  # Store the last network test report
 
 def get_temperature():
     """Get system temperature (if available)"""
@@ -125,11 +125,13 @@ def get_report():
 
 @app.route('/network_test', methods=['POST'])
 def network_test():
-    """Run network test between rpi1 and rpi2"""
+    """Run network test using iperf3"""
+    global network_report  # Ensure we modify the global variable
+
     try:
-        # Run iperf3 between rpi1 and rpi2
+        # Run iperf3 between devices
         result = subprocess.run(
-            ["iperf3", "-c", "192.168.0.50", "-t", "10"],  # Test for 10 seconds
+            ["iperf3", "-c", "192.168.0.50", "-t", "10", "-J"],  # Test for 10 seconds
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
@@ -138,13 +140,15 @@ def network_test():
         if result.returncode != 0:
             return jsonify({"error": "Network test failed", "details": result.stderr}), 500
         
-        # Parse the result to extract useful data (e.g., throughput)
-        output = result.stdout
+        # Store the entire test result
+        network_report = result.stdout  # Save report globally for retrieval
+
         # Example of parsing throughput:
-        lines = output.splitlines()
+        throughput = None
+        lines = result.stdout.splitlines()
         for line in lines:
             if "sender" in line:
-                throughput = line.split()[-2]  # Extract the throughput value
+                throughput = line.split()[-2]  # Extract throughput value
                 break
         
         return jsonify({
@@ -155,6 +159,13 @@ def network_test():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/network_report', methods=['GET'])
+def get_network_report():
+    """Return the last network test report"""
+    global network_report
+    if network_report:
+        return jsonify({"report": network_report})
+    return jsonify({"message": "No network test report available"}), 404
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='172.18.18.20', port=5000, debug=True)
