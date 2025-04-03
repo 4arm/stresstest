@@ -5,27 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raspberry Pi Stress Test Monitor</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #1e1e2e; color: #ffffff; text-align: center; }
-        h1 { color: #00d4ff; }
-        .container { width: 80%; margin: auto; }
-        .device-card { background: #2a2a3b; padding: 20px; margin: 15px; border-radius: 10px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); }
-        .status { font-weight: bold; padding: 3px 8px; border-radius: 5px; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e2e;
+            color: #ffffff;
+            text-align: center;
+        }
+        h1 {
+            color: #00d4ff;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+        }
+        .device-card {
+            background: #2a2a3b;
+            padding: 20px;
+            margin: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .status {
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 5px;
+        }
         .good { background-color: #00ff00; color: black; }
         .warning { background-color: #ffcc00; color: black; }
         .critical { background-color: #ff0000; color: white; }
-        .btn { background-color: #00d4ff; border: none; padding: 10px 20px; cursor: pointer; font-size: 16px; color: black; border-radius: 5px; }
-        .btn:hover { background-color: #00a3cc; }
+        .btn {
+            background-color: #00d4ff;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            color: black;
+            border-radius: 5px;
+        }
+        .btn:hover {
+            background-color: #00a3cc;
+        }
+        input {
+            padding: 8px;
+            width: 60px;
+            text-align: center;
+            border-radius: 5px;
+            border: none;
+            margin-left: 10px;
+        }
+        #notification {
+            margin-top: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-    <h1>Raspberry Pi Stress Test & Network Monitor</h1>
+    <h1>Raspberry Pi Stress Test Monitor</h1>
     <div class="container">
         <div id="deviceGrid"></div>
     </div>
 
     <script>
         const devices = [
-            { name: "Client-Pi1", ip: "172.18.18.20", peer: "172.18.18.21" } 
+            { name: "Client-Pi1", ip: "172.18.18.20" },
+            { name: "Client-Pi2", ip: "172.18.18.21" }
         ];
 
         function getStatusClass(value, warningThreshold, criticalThreshold) {
@@ -39,32 +83,94 @@
                 fetch(`http://${device.ip}:5000/data`)
                     .then(response => response.json())
                     .then(data => {
-                        document.getElementById(`cpu-${device.ip}`).innerText = data.cpu_usage + " %";
-                        document.getElementById(`cpu-${device.ip}`).className = `status ${getStatusClass(data.cpu_usage, 50, 80)}`;
+                        console.log(`Updating ${device.ip} - CPU: ${data.cpu_usage}, Temp: ${data.temperature}`);
+                        
+                        let cpuElement = document.getElementById(`cpu-${device.ip}`);
+                        let tempElement = document.getElementById(`temp-${device.ip}`);
 
-                        document.getElementById(`temp-${device.ip}`).innerText = data.temperature + " °C";
-                        document.getElementById(`temp-${device.ip}`).className = `status ${getStatusClass(data.temperature, 60, 75)}`;
+                        cpuElement.innerText = data.cpu_usage + " %";
+                        cpuElement.className = `status ${getStatusClass(data.cpu_usage, 50, 80)}`;
 
-                        document.getElementById(`net-${device.ip}`).innerText = data.network_speed + " MB/s";
+                        tempElement.innerText = data.temperature + " °C";
+                        tempElement.className = `status ${getStatusClass(data.temperature, 60, 75)}`;
                     })
                     .catch(err => console.log(`Device ${device.ip} not responding`));
             });
         }
 
-        function testNetworkSpeed(ip, peer) {
-            const notification = document.getElementById(`network-status-${ip}`);
-            notification.innerText = "Testing network speed...";
-
+        function networkTest(ip) {
+            const targetIp = ip === "172.18.18.20" ? "172.18.18.21" : "172.18.18.20";  // Assuming Pi1 and Pi2 are the devices
             fetch(`http://${ip}:5000/network_test`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ target_ip: peer })
+                body: JSON.stringify({ target_ip: targetIp })
             })
             .then(response => response.json())
             .then(data => {
-                notification.innerText = data.message || data.error;
+                alert(data.message);
             })
             .catch(err => console.log(err));
+        }
+
+        function stressTest(ip) {
+            const duration = document.getElementById(`duration-${ip}`).value || 20;
+            const notification = document.getElementById(`notification-${ip}`);
+            const stressButton = document.getElementById(`stress-btn-${ip}`);
+            const stopButton = document.getElementById(`stop-btn-${ip}`);
+
+            stressButton.disabled = true;
+            stopButton.disabled = false;
+
+            notification.innerText = `Stress test starting for ${duration} seconds...`;
+
+            fetch(`http://${ip}:5000/stress`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ duration })
+            })
+            .then(response => response.json())
+            .then(data => {
+                notification.innerText = data.message;
+                startCountdown(ip, duration);
+            })
+            .catch(err => console.log(err));
+        }
+
+        function stopStressTest(ip) {
+            const notification = document.getElementById(`notification-${ip}`);
+            const stressButton = document.getElementById(`stress-btn-${ip}`);
+            const stopButton = document.getElementById(`stop-btn-${ip}`);
+
+            fetch(`http://${ip}:5000/stop_stress`, {
+                method: "POST"
+            })
+            .then(response => response.json())
+            .then(data => {
+                notification.innerText = "Stress test stopped!";
+                clearInterval(countdownTimers[ip]); // Stop countdown
+                stressButton.disabled = false; // Re-enable stress button
+                stopButton.disabled = true; // Disable stop button
+            })
+            .catch(err => console.log(err));
+        }
+
+        let countdownTimers = {};
+
+        function startCountdown(ip, duration) {
+            const notification = document.getElementById(`notification-${ip}`);
+            let timeLeft = duration;
+
+            countdownTimers[ip] = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(countdownTimers[ip]);
+                    notification.innerText = "Stress test completed!";
+                    document.getElementById(`stress-btn-${ip}`).disabled = false; // Re-enable stress button
+                    document.getElementById(`stop-btn-${ip}`).disabled = true; // Disable stop button
+                    return;
+                }
+                notification.innerText = `Stress test running... ${timeLeft}s left`;
+                timeLeft--;
+            }, 1000);
         }
 
         function generateDeviceGrid() {
@@ -77,9 +183,12 @@
                         <h2>${device.name} (${device.ip})</h2>
                         <p>CPU Usage: <span id="cpu-${device.ip}" class="status">Loading...</span></p>
                         <p>Temperature: <span id="temp-${device.ip}" class="status">Loading...</span></p>
-                        <p>Network Speed: <span id="net-${device.ip}" class="status">Loading...</span></p>
-                        <button class="btn" onclick="testNetworkSpeed('${device.ip}', '${device.peer}')">Test Network Speed</button>
-                        <p id="network-status-${device.ip}"></p>
+                        <p>Stress Test: <span id="stress-status-${device.ip}" class="status">Idle</span></p>
+                        <input type="number" id="duration-${device.ip}" placeholder="20" min="5" max="60"> sec
+                        <button class="btn" id="stress-btn-${device.ip}" onclick="stressTest('${device.ip}')">Stress Test CPU</button>
+                        <button class="btn" id="stop-btn-${device.ip}" onclick="stopStressTest('${device.ip}')" disabled>Stop Test</button>
+                        <button class="btn" onclick="networkTest('${device.ip}')">Test Network</button>
+                        <p id="notification-${device.ip}"></p>
                     </div>
                 `;
             });
@@ -87,6 +196,7 @@
 
         generateDeviceGrid();
         setInterval(updateStats, 2000);
+
     </script>
 </body>
 </html>
