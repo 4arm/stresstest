@@ -3,39 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Test</title>
+    <title>Raspberry Pi Stress & Network Test Monitor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e2e;
+            color: #ffffff;
+            text-align: center;
+        }
+        h1 {
+            color: #00d4ff;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+        }
+        .device-card {
+            background: #2a2a3b;
+            padding: 20px;
+            margin: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .status {
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 5px;
+        }
+        .good { background-color: #00ff00; color: black; }
+        .warning { background-color: #ffcc00; color: black; }
+        .critical { background-color: #ff0000; color: white; }
+        .btn {
+            background-color: #00d4ff;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            color: black;
+            border-radius: 5px;
+        }
+        .btn:hover {
+            background-color: #00a3cc;
+        }
+        input {
+            padding: 8px;
+            width: 60px;
+            text-align: center;
+            border-radius: 5px;
+            border: none;
+            margin-left: 10px;
+        }
+        #network-report {
+            margin-top: 20px;
+            background-color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
-    <h1>Network Speed Test</h1>
-    <button onclick="startTest()">Start Test</button>
-    <div id="status"></div>
-    <div id="results"></div>
+    <h1>Raspberry Pi Stress & Network Test Monitor</h1>
+    <div class="container">
+        <div class="device-card">
+            <h2>Network Performance Test</h2>
+            <button class="btn" onclick="runNetworkTest()">Run Network Test</button>
+            <p id="network-status">Status: Idle</p>
+            <button class="btn" onclick="fetchNetworkReport()">View Last Report</button>
+            <div id="network-report"></div>
+        </div>
+    </div>
 
     <script>
-        function startTest() {
-            // Display status
-            document.getElementById('status').innerText = 'Test is starting...';
+        function runNetworkTest() {
+            document.getElementById("network-status").innerText = "Status: Running...";
 
-            // Make a request to start the test
-            fetch('/start_test')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('status').innerText = data.status;
-                    // After a short delay, fetch the results
-                    setTimeout(fetchResults, 5000);
-                });
+            fetch("http://172.18.18.20:5000/network_test", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ server_ip: "172.18.18.21" })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("network-status").innerText = data.message;
+            })
+            .catch(err => console.log(err));
         }
 
-        function fetchResults() {
-            fetch('/test_results')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.test_results) {
-                        document.getElementById('results').innerText = 'Test Results: ' + data.test_results;
-                    } else {
-                        document.getElementById('results').innerText = 'No results available yet.';
-                    }
-                });
+        function fetchNetworkReport() {
+            fetch("http://172.18.18.20:5000/network_report")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("network-report").innerText = data.report || "No report available.";
+                if (data.report) {
+                    console.log("Network Test Report:", data.report);
+                } else {
+                    console.log("No report available");
+                }
+            })
+            .catch(err => console.log("Error fetching report:",err));
         }
     </script>
 </body>

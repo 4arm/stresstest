@@ -64,8 +64,6 @@
     <h1>Raspberry Pi Stress Test Monitor</h1>
     <div class="container">
         <div id="deviceGrid"></div>
-        <button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
-        <p id="network-status"></p>
     </div>
 
     <script>
@@ -177,6 +175,11 @@
                         <button class="btn" id="stress-btn-${device.ip}" onclick="stressTest('${device.ip}')">Stress Test CPU</button>
                         <button class="btn" id="stop-btn-${device.ip}" onclick="stopStressTest('${device.ip}')" disabled>Stop Test</button>
                         <p id="notification-${device.ip}"></p>
+                        <button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
+                        <p id="network-status"></p>
+                        <button class="btn" onclick="fetchNetworkReport()">View Last Report</button>
+                        <div id="network-report"></div>
+
                     </div>
                 `;
             });
@@ -204,6 +207,20 @@
                 console.log(err);
                 notification.innerText = "Error running network test.";
             });
+        }
+
+        function fetchNetworkReport() {
+            fetch("http://172.18.18.20:5000/network_report")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("network-report").innerText = data.report || "No report available.";
+                if (data.report) {
+                    console.log("Network Test Report:", data.report);
+                } else {
+                    console.log("No report available");
+                }
+            })
+            .catch(err => console.log("Error fetching report:",err));
         }
 
         generateDeviceGrid();
