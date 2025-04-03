@@ -52,39 +52,10 @@ def get_system_info():
         "stress_running": stress_running
     }
 
-def test_network_speed(target_ip):
-    """Test the network speed between two devices using ping and measure round-trip time"""
-    try:
-        result = subprocess.run(["ping", "-c", "4", target_ip], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if result.returncode == 0:
-            output = result.stdout.decode("utf-8")
-            avg_rtt = [line for line in output.splitlines() if "avg" in line]
-            if avg_rtt:
-                avg_rtt = avg_rtt[0].split("/")[4]  # Extract average RTT from ping results
-                return float(avg_rtt)
-            return None
-        else:
-            return None
-    except Exception as e:
-        return None
-
 @app.route('/data', methods=['GET'])
 def data():
     """Return system info"""
     return jsonify(get_system_info())
-
-@app.route('/network_test', methods=['POST'])
-def network_test():
-    """Test network speed between Pi1 and Pi2"""
-    data = request.get_json()
-    target_ip = data.get("target_ip", "172.18.18.21")  # Default to Pi2 IP if not provided
-
-    network_speed = test_network_speed(target_ip)
-
-    if network_speed is not None:
-        return jsonify({"message": f"Network test successful. Average RTT: {network_speed} ms"}), 200
-    else:
-        return jsonify({"error": "Network test failed or target unreachable"}), 500
 
 @app.route('/stress', methods=['POST'])
 def stress_test():
@@ -151,6 +122,39 @@ def get_report():
     if stress_report:
         return jsonify(stress_report)
     return jsonify({"message": "No stress test report available"}), 404
+
+@app.route('/network_test', methods=['POST'])
+def network_test():
+    """Run network test between rpi1 and rpi2"""
+    try:
+        # Run iperf3 between rpi1 and rpi2
+        result = subprocess.run(
+            ["iperf3", "-c", "192.168.0.50", "-t", "10"],  # Test for 10 seconds
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            return jsonify({"error": "Network test failed", "details": result.stderr}), 500
+        
+        # Parse the result to extract useful data (e.g., throughput)
+        output = result.stdout
+        # Example of parsing throughput:
+        lines = output.splitlines()
+        for line in lines:
+            if "sender" in line:
+                throughput = line.split()[-2]  # Extract the throughput value
+                break
+        
+        return jsonify({
+            "message": "Network test completed",
+            "throughput": throughput,
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

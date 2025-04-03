@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Test</title>
+</head>
+<body>
+    <h1>Network Speed Test</h1>
+    <button onclick="startTest()">Start Test</button>
+    <div id="status"></div>
+    <div id="results"></div>
+
+    <script>
+        function startTest() {
+            // Display status
+            document.getElementById('status').innerText = 'Test is starting...';
+
+            // Make a request to start the test
+            fetch('/start_test')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('status').innerText = data.status;
+                    // After a short delay, fetch the results
+                    setTimeout(fetchResults, 5000);
+                });
+        }
+
+        function fetchResults() {
+            fetch('/test_results')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.test_results) {
+                        document.getElementById('results').innerText = 'Test Results: ' + data.test_results;
+                    } else {
+                        document.getElementById('results').innerText = 'No results available yet.';
+                    }
+                });
+        }
+    </script>
+</body>
+</html>

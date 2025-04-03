@@ -64,12 +64,13 @@
     <h1>Raspberry Pi Stress Test Monitor</h1>
     <div class="container">
         <div id="deviceGrid"></div>
+        <button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
+        <p id="network-status"></p>
     </div>
 
     <script>
         const devices = [
-            { name: "Client-Pi1", ip: "172.18.18.20" },
-            { name: "Client-Pi2", ip: "172.18.18.21" }
+            { name: "Client-Pi1", ip: "172.18.18.20" }
         ];
 
         function getStatusClass(value, warningThreshold, criticalThreshold) {
@@ -96,21 +97,8 @@
                     })
                     .catch(err => console.log(`Device ${device.ip} not responding`));
             });
-        }
+}
 
-        function networkTest(ip) {
-            const targetIp = ip === "172.18.18.20" ? "172.18.18.21" : "172.18.18.20";  // Assuming Pi1 and Pi2 are the devices
-            fetch(`http://${ip}:5000/network_test`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ target_ip: targetIp })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert(data.message);
-            })
-            .catch(err => console.log(err));
-        }
 
         function stressTest(ip) {
             const duration = document.getElementById(`duration-${ip}`).value || 20;
@@ -118,6 +106,7 @@
             const stressButton = document.getElementById(`stress-btn-${ip}`);
             const stopButton = document.getElementById(`stop-btn-${ip}`);
 
+            // Disable stress test button & enable stop button
             stressButton.disabled = true;
             stopButton.disabled = false;
 
@@ -154,7 +143,7 @@
             .catch(err => console.log(err));
         }
 
-        let countdownTimers = {};
+        let countdownTimers = {}; 
 
         function startCountdown(ip, duration) {
             const notification = document.getElementById(`notification-${ip}`);
@@ -187,10 +176,33 @@
                         <input type="number" id="duration-${device.ip}" placeholder="20" min="5" max="60"> sec
                         <button class="btn" id="stress-btn-${device.ip}" onclick="stressTest('${device.ip}')">Stress Test CPU</button>
                         <button class="btn" id="stop-btn-${device.ip}" onclick="stopStressTest('${device.ip}')" disabled>Stop Test</button>
-                        <button class="btn" onclick="networkTest('${device.ip}')">Test Network</button>
                         <p id="notification-${device.ip}"></p>
                     </div>
                 `;
+            });
+            
+        }
+
+        function runNetworkTest() {
+            const notification = document.getElementById("network-status");
+
+            notification.innerText = "Network test starting...";
+
+            fetch(`http://${devices[0].ip}:5000/network_test`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    notification.innerText = `Error: ${data.error}`;
+                } else {
+                    notification.innerText = `Network test completed. Throughput: ${data.throughput} Mbps`;
+                }
+            })
+            .catch(err => {
+                console.log(err);
+                notification.innerText = "Error running network test.";
             });
         }
 
