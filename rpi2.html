@@ -173,26 +173,20 @@
 
         function runNetworkTest(ip) {
             const notification = document.getElementById(`network-status-${ip}`);
-
             notification.innerText = "Network test starting...";
 
-            fetch(`http://${ip}:5000/network_test`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    notification.innerText = `Error: ${data.error}`;
-                } else {
-                    notification.innerText = `Network test completed. Throughput: ${data.throughput} Mbps`;
-                }
-            })
-            .catch(err => {
-                console.log(err);
-                notification.innerText = "Error running network test.";
-            });
+            const eventSource = new EventSource(`http://${ip}:5000/network_test`);
+
+            eventSource.onmessage = function(event) {
+                notification.innerText += "\n" + event.data; // Append live iperf3 output
+            };
+
+            eventSource.onerror = function() {
+                notification.innerText += "\nNetwork test finished.";
+                eventSource.close();
+            };
         }
+
 
         function fetchNetworkReport(ip) {
             const reportElement = document.getElementById(`network-report-${ip}`);

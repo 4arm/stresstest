@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from flask_cors import CORS
 import psutil
 import subprocess
@@ -123,41 +123,23 @@ def get_report():
         return jsonify(stress_report)
     return jsonify({"message": "No stress test report available"}), 404
 
+
 @app.route('/network_test', methods=['POST'])
 def network_test():
-    """Run network test using iperf3"""
-    global network_report  # Ensure we modify the global variable
-
-    try:
-        # Run iperf3 between devices
-        result = subprocess.run(
-            ["iperf3", "-c", "192.168.0.50", "-t", "10", "-J"],  # Test for 10 seconds
+    """Run network test using iperf3 and stream output"""
+    def generate_output():
+        process = subprocess.Popen(
+            ["iperf3", "-c", "192.168.0.50", "-t", "10"],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True
         )
-        
-        if result.returncode != 0:
-            return jsonify({"error": "Network test failed", "details": result.stderr}), 500
-        
-        # Store the entire test result
-        network_report = result.stdout  # Save report globally for retrieval
+        for line in iter(process.stdout.readline, ""):
+            yield f"data: {line.strip()}\n\n"
+        process.stdout.close()
+        process.wait()
 
-        # Example of parsing throughput:
-        throughput = None
-        lines = result.stdout.splitlines()
-        for line in lines:
-            if "sender" in line:
-                throughput = line.split()[-2]  # Extract throughput value
-                break
-        
-        return jsonify({
-            "message": "Network test completed",
-            "throughput": throughput,
-        }), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return Response(generate_output(), mimetype="text/event-stream")
 
 @app.route('/network_report', methods=['GET'])
 def get_network_report():
