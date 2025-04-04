@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Ping Monitor</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f0f0; color: #333; }
+        h1 { text-align: center; }
+        input[type="text"] { width: 300px; padding: 10px; margin: 10px auto; display: block; }
+        button { padding: 10px 20px; margin: 10px auto; display: block; cursor: pointer; }
+        pre { max-height: 400px; overflow-y: scroll; }
+        #output { background-color: #fff; padding: 10px; border: 1px solid #ccc; margin: 20px auto; width: 80%; }
+        #output span { display: block; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Ping Monitor</h1>
+    <input type="text" id="ip" placeholder="Enter IP to Ping" />
+    <button onclick="startPing()">Start Ping</button>
+    <pre id="output"></pre>
+
+    <script>
+        const socket = io();
+
+        socket.on('ping_output', function (msg) {
+            document.getElementById('output').textContent += msg.data + '\n';
+        });
+
+        function startPing() {
+            const ip = document.getElementById('ip').value || '8.8.8.8';
+            document.getElementById('output').textContent = '';  // clear previous
+            socket.emit('start_ping', { ip: ip });
+        }
+    </script>
+</body>
+</html>

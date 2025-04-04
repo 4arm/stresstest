@@ -1,9 +1,11 @@
-from flask import Flask, jsonify, request, Response
+from flask import Flask, json, jsonify, request
 from flask_cors import CORS
 import psutil
 import subprocess
 import socket
 import time
+import os
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -16,6 +18,10 @@ prev_time = time.time()
 stress_running = False
 stress_report = None  # Store the last stress test report
 network_report = None  # Store the last network test report
+
+# Create a directory to store reports if it doesn't exist
+REPORTS_DIR = "reports"
+os.makedirs(REPORTS_DIR, exist_ok=True)
 
 def get_temperature():
     """Get system temperature (if available)"""
@@ -123,23 +129,41 @@ def get_report():
         return jsonify(stress_report)
     return jsonify({"message": "No stress test report available"}), 404
 
-
 @app.route('/network_test', methods=['POST'])
 def network_test():
-    """Run network test using iperf3 and stream output"""
-    def generate_output():
-        process = subprocess.Popen(
-            ["iperf3", "-c", "192.168.0.50", "-t", "10"],
+    """Run network test using iperf3"""
+    global network_report  # Ensure we modify the global variable
+
+    try:
+        # Run iperf3 between devices
+        result = subprocess.run(
+            ["iperf3", "-c", "192.168.0.50", "-t", "10", "-J"],  # Test for 10 seconds
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.PIPE,
             text=True
         )
-        for line in iter(process.stdout.readline, ""):
-            yield f"data: {line.strip()}\n\n"
-        process.stdout.close()
-        process.wait()
+        
+        if result.returncode != 0:
+            return jsonify({"error": "Network test failed", "details": result.stderr}), 500
+        
+        # Store the entire test result
+        network_report = result.stdout  # Save report globally for retrieval
 
-    return Response(generate_output(), mimetype="text/event-stream")
+        # Example of parsing throughput:
+        throughput = None
+        lines = result.stdout.splitlines()
+        for line in lines:
+            if "sender" in line:
+                throughput = line.split()[-2]  # Extract throughput value
+                break
+        
+        return jsonify({
+            "message": "Network test completed",
+            "throughput": throughput,
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/network_report', methods=['GET'])
 def get_network_report():
@@ -148,6 +172,30 @@ def get_network_report():
     if network_report:
         return jsonify({"report": network_report})
     return jsonify({"message": "No network test report available"}), 404
+
+# Function to save past reports
+def save_report(stress_report):
+    filename = os.path.join(REPORTS_DIR, f"report_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json")
+    with open(filename, 'w') as f:
+        json.dump(stress_report, f)
+
+# Endpoint to fetch past reports
+@app.route('/past_reports', methods=['GET'])
+def past_reports():
+    reports = []
+    for filename in os.listdir(REPORTS_DIR):
+        if filename.endswith(".json"):
+            with open(os.path.join(REPORTS_DIR, filename), 'r') as f:
+                reports.append(json.load(f))
+    return jsonify({"reports": reports})
+
+# Endpoint to compare a past report
+@app.route('/compare_report', methods=['GET'])
+def compare_report():
+    date = request.args.get('date')
+    # Logic to compare reports based on date...
+    comparison = "Comparing results of past report..."
+    return jsonify({"comparison": comparison})
 
 if __name__ == '__main__':
     app.run(host='172.18.18.20', port=5000, debug=True)
