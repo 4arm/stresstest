@@ -238,22 +238,22 @@
 
         function updateStats() {
             devices.forEach(device => {
-                fetch(`http://${device.ip1}:5000/data`)
+                fetch(`http://${device.ip}:5000/data`)
                     .then(response => response.json())
                     .then(data => {
-                        console.log(`Updating ${device.ip1} - CPU: ${data.cpu_usage},
+                        console.log(`Updating ${device.ip} - CPU: ${data.cpu_usage},
                         Temp: ${data.temperature},
                         Hostname: ${data.hostname},
                         Network Speed: ${data.network_speed},
                         Ram Usage: ${data.ram_used},
                         Stress Test Status: ${data.stress_running}`);
 
-                        let cpuElement = document.getElementById(`cpu-${device.ip1}`);
-                        let tempElement = document.getElementById(`temp-${device.ip1}`);
-                        let hostnameElement = document.getElementById(`hostname-${device.ip1}`);
-                        let networkSpeedElement = document.getElementById(`network-speed-${device.ip1}`);
-                        let ramElement = document.getElementById(`ram_used-${device.ip1}`);
-                        let stressStatusElement = document.getElementById(`stress-status-${device.ip1}`);
+                        let cpuElement = document.getElementById(`cpu-${device.ip}`);
+                        let tempElement = document.getElementById(`temp-${device.ip}`);
+                        let hostnameElement = document.getElementById(`hostname-${device.ip}`);
+                        let networkSpeedElement = document.getElementById(`network-speed-${device.ip}`);
+                        let ramElement = document.getElementById(`ram_used-${device.ip}`);
+                        let stressStatusElement = document.getElementById(`stress-status-${device.ip}`);
 
                         cpuElement.innerText = `${data.cpu_usage} %`;
                         cpuElement.className = `status ${getStatusClass(data.cpu_usage, 50, 80)}`;
@@ -274,23 +274,23 @@
                         networkSpeedElement.innerText = `${data.network_speed} Mbps`;
                         networkSpeedElement.className = `status ${getStatusClass(data.network_speed, 100, 200)}`;
                     })
-                    .catch(err => console.log(`Device ${device.ip1} not responding`));
+                    .catch(err => console.log(`Device ${device.ip} not responding`));
             });
         }
 
-        function stressTest(ip1) {
-            const duration = document.getElementById(`duration-${ip1}`).value || 20;
-            const notification = document.getElementById(`notification-${ip1}`);
-            const stressButton = document.getElementById(`stress-btn-${ip1}`);
-            const stopButton = document.getElementById(`stop-btn-${ip1}`);
+        function stressTest(ip) {
+            const duration = document.getElementById(`duration-${ip}`).value || 20;
+            const notification = document.getElementById(`notification-${ip}`);
+            const stressButton = document.getElementById(`stress-btn-${ip}`);
+            const stopButton = document.getElementById(`stop-btn-${ip}`);
 
             stressButton.disabled = true;
             stopButton.disabled = false;
             notification.innerText = `Stress test starting for ${duration} seconds...`;
 
-            startCountdown(ip1, duration);
+            startCountdown(ip, duration);
 
-            fetch(`http://${ip1}:5000/stress`, {
+            fetch(`http://${ip}:5000/stress`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ duration })
@@ -302,16 +302,16 @@
             .catch(err => console.log(err));
         }
 
-        function stopStressTest(ip1) {
-            const notification = document.getElementById(`notification-${ip1}`);
-            const stressButton = document.getElementById(`stress-btn-${ip1}`);
-            const stopButton = document.getElementById(`stop-btn-${ip1}`);
+        function stopStressTest(ip) {
+            const notification = document.getElementById(`notification-${ip}`);
+            const stressButton = document.getElementById(`stress-btn-${ip}`);
+            const stopButton = document.getElementById(`stop-btn-${ip}`);
 
-            fetch(`http://${ip1}:5000/stop_stress`, { method: "POST" })
+            fetch(`http://${ip}:5000/stop_stress`, { method: "POST" })
                 .then(response => response.json())
                 .then(data => {
                     notification.innerText = "Stress test stopped!";
-                    clearInterval(countdownTimers[ip1]);
+                    clearInterval(countdownTimers[ip]);
                     stressButton.disabled = false;
                     stopButton.disabled = true;
                 })
@@ -320,41 +320,41 @@
 
         let countdownTimers = {};
 
-        function startCountdown(ip1, duration) {
-            const notification = document.getElementById(`notification-${ip1}`);
+        function startCountdown(ip, duration) {
+            const notification = document.getElementById(`notification-${ip}`);
             let timeLeft = duration;
 
-            if (countdownTimers[ip1]) {
-                clearInterval(countdownTimers[ip1]);
+            if (countdownTimers[ip]) {
+                clearInterval(countdownTimers[ip]);
             }
 
             notification.innerText = `Stress test running... ${timeLeft}s left`;
 
-            countdownTimers[ip1] = setInterval(() => {
+            countdownTimers[ip] = setInterval(() => {
                 timeLeft--;
 
                 if (timeLeft <= 0) {
-                    clearInterval(countdownTimers[ip1]);
+                    clearInterval(countdownTimers[ip]);
                     notification.innerText = "Stress test completed!";
-                    document.getElementById(`stress-btn-${ip1}`).disabled = false;
-                    document.getElementById(`stop-btn-${ip1}`).disabled = true;
+                    document.getElementById(`stress-btn-${ip}`).disabled = false;
+                    document.getElementById(`stop-btn-${ip}`).disabled = true;
                 } else {
                     notification.innerText = `Stress test running... ${timeLeft}s left`;
                 }
             }, 1000);
         }
 
-        function fetchNetworkReport(ip1) {
-            const reportElement = document.getElementById(`network-report-${ip1}`);
+        function fetchNetworkReport(ip) {
+            const reportElement = document.getElementById(`network-report-${ip}`);
 
-            fetch(`http://${ip1}:5000/network_metrics`)
+            fetch(`http://${ip}:5000/network_metrics`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
                         reportElement.innerText = `Error: ${data.error}`;
                     } else {
                         reportElement.innerHTML = `
-                            <h3>Network Report for ${ip1}</h3>
+                            <h3>Network Report for ${ip}</h3>
                             
                             <!-- Start Section -->
                             <div class="section">
@@ -435,17 +435,17 @@
                 });
         }
 
-        function fetchStressReport(ip1) {
-            const reportElement = document.getElementById(`stress-report-${ip1}`);
+        function fetchStressReport(ip) {
+            const reportElement = document.getElementById(`stress-report-${ip}`);
 
-            fetch(`http://${ip1}:5000/stress_result`)
+            fetch(`http://${ip}:5000/stress_result`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
                         reportElement.innerText = `Error: ${data.error}`;
                     } else {
                         reportElement.innerHTML = `
-                            <h3>Stress Test Report for ${ip1}</h3>
+                            <h3>Stress Test Report for ${ip}</h3>
                             <p>Duration: ${data.duration}s</p>
                             <p>CPU Usage: ${data.end.cpu_usage}%</p>
                             <p>Temperature: ${data.end.temperature}°C</p>
@@ -459,11 +459,11 @@
         }
 
         
-        function runNetworkTest(ip1) {
-            const notification = document.getElementById(`network-status-${ip1}`);
+        function runNetworkTest(ip) {
+            const notification = document.getElementById(`network-status-${ip}`);
             notification.innerText = "Network test starting...";
 
-            fetch(`http://${ip1}:5000/test_network`, { method: "POST" })
+            fetch(`http://${ip}:5000/test_network`, { method: "POST" })
                 .then(response => response.json())
                 .then(data => {
                     notification.innerText = data.error ? `Error: ${data.error}` : "Network test completed.";
@@ -480,18 +480,18 @@
             devices.forEach(device => {
                 grid.innerHTML += `
                     <div class="device-card">
-                        <h2>${device.name1} (${device.ip1})</h2>
-                        <p>Hostname: <span id="hostname-${device.ip1}" class="status">Loading...</span></p>
-                        <p>CPU Usage: <span id="cpu-${device.ip1}" class="status">Loading...</span></p>
-                        <p>RAM Usage: <span id="ram_used-${device.ip1}" class="status">Loading...</span></p>
-                        <p>Network Speed: <span id="network-speed-${device.ip1}" class="status">Loading...</span></p>
-                        <p>Temperature: <span id="temp-${device.ip1}" class="status">Loading...</span></p>
-                        <p>Stress Test: <span id="stress-status-${device.ip1}" class="status">Idle</span></p>
-                        <input type="number" id="duration-${device.ip1}" placeholder="20" min="5" max="60"> sec
-                        <button class="btn" id="stress-btn-${device.ip1}" onclick="stressTest('${device.ip1}')">Stress Test CPU</button>
-                        <button class="btn" id="stop-btn-${device.ip1}" onclick="stopStressTest('${device.ip1}')" disabled>Stop Test</button>
-                        <button class="btn" id="stress-report-${device.ip1}" onclick="fetchStressReport('${device.ip1}')">Stress Test Report</button>
-                        <p id="notification-${device.ip1}"></p>
+                        <h2>${device.name} (${device.ip})</h2>
+                        <p>Hostname: <span id="hostname-${device.ip}" class="status">Loading...</span></p>
+                        <p>CPU Usage: <span id="cpu-${device.ip}" class="status">Loading...</span></p>
+                        <p>RAM Usage: <span id="ram_used-${device.ip}" class="status">Loading...</span></p>
+                        <p>Network Speed: <span id="network-speed-${device.ip}" class="status">Loading...</span></p>
+                        <p>Temperature: <span id="temp-${device.ip}" class="status">Loading...</span></p>
+                        <p>Stress Test: <span id="stress-status-${device.ip}" class="status">Idle</span></p>
+                        <input type="number" id="duration-${device.ip}" placeholder="20" min="5" max="60"> sec
+                        <button class="btn" id="stress-btn-${device.ip}" onclick="stressTest('${device.ip}')">Stress Test CPU</button>
+                        <button class="btn" id="stop-btn-${device.ip}" onclick="stopStressTest('${device.ip}')" disabled>Stop Test</button>
+                        <button class="btn" id="stress-report-${device.ip}" onclick="fetchStressReport('${device.ip}')">Stress Test Report</button>
+                        <p id="notification-${device.ip}"></p>
                     </div>
                 `;
             });
@@ -501,10 +501,10 @@
             devices.forEach(device => {
                 grid1.innerHTML += `
                     <h1>Network Performance Data</h1>
-                    <button class="btn" id="network-btn-${device.ip1}" onclick="runNetworkTest('${device.ip1}')">Run Network Test</button>
-                    <p id="network-status-${device.ip1}"></p>
-                    <button class="btn" onclick="fetchNetworkReport('${device.ip1}')">View Last Report</button>
-                    <div id="network-report-${device.ip1}" class="network-report"></div>
+                    <button class="btn" id="network-btn-${device.ip}" onclick="runNetworkTest('${device.ip}')">Run Network Test</button>
+                    <p id="network-status-${device.ip}"></p>
+                    <button class="btn" onclick="fetchNetworkReport('${device.ip}')">View Last Report</button>
+                    <div id="network-report-${device.ip}" class="network-report"></div>
                 `;
             });
         }

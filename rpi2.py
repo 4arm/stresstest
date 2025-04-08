@@ -13,6 +13,8 @@ CORS(app)
 hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
 RESULT_FILE = "result.json"
+rpi1 = "172.18.18.50"
+rpi2 = "172.18.18.20"
 
 prev_net_io = psutil.net_io_counters()
 prev_time = time.time()
@@ -111,6 +113,10 @@ def stress_test():
     except Exception as e:
         stress_running = False
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/stress_result', methods=['GET'])
+def get_stress_result():
+    return jsonify(stress_report)
 
 @app.route('/stop_stress', methods=['POST'])
 def stop_stress():
@@ -135,7 +141,7 @@ def get_report():
 @app.route('/test_network', methods=['POST'])
 def run_network_test():
     try:
-        command = f"iperf3 -c 192.168.0.50 -t 10 -J > {RESULT_FILE}"
+        command = f"iperf3 -c {rpi1} -t 10 -J > {RESULT_FILE}"
         os.system(command)
         return jsonify({"status": "success", "message": "Network test completed."})
     except Exception as e:
@@ -154,13 +160,18 @@ def get_network_metrics():
                 result = json.load(f)
                 summary = result.get("end", {}).get("sum_received", {})
                 sender = result.get("end", {}).get("sum_sent", {})
-                client_stats = result.get("end", {}).get("streams", [{}])[0].get("sender", {})
-                
+
                 throughput_mbps = round(summary.get("bits_per_second", 0) / 1_000_000, 2)
                 retransmits = sender.get("retransmits", "Unavailable")
                 rtt_ms = round(result.get("end", {}).get("streams", [{}])[0].get("receiver", {}).get("mean_rtt", 0) / 1000, 2)
 
                 return jsonify({
+                    "client_ip": result.get("start", {}).get("connected", [{}])[0].get("local_host"),
+                    "server_ip": result.get("start", {}).get("connected", [{}])[0].get("remote_host"),
+                    "timestamp": result.get("start", {}).get("timestamp", {}).get("time"),
+                    "sent_bytes": summary.get("bytes", 0),
+                    "received_bytes": summary.get("bytes", 0),
+                    "cpu_utilization": summary.get("cpu_utilization_percent", "Unavailable"),
                     "throughput_mbps": throughput_mbps,
                     "retransmits": retransmits,
                     "rtt_ms": rtt_ms
