@@ -1,0 +1,224 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121212;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+h1 {
+    color: #00d4ff;
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.container {
+    width: 70%;
+    max-width: 1200px;
+    padding: 20px;
+}
+
+.device-card {
+    background: #2a2a3b;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.device-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.device-card h2 {
+    font-size: 1.6em;
+    color: #00d4ff;
+    margin-bottom: 10px;
+}
+
+.status {
+    font-weight: bold;
+    padding: 5px 12px;
+    border-radius: 6px;
+}
+
+.good {
+    background-color: #00ff00;
+    color: black;
+}
+
+.warning {
+    background-color: #ffcc00;
+    color: black;
+}
+
+.critical {
+    background-color: #ff0000;
+    color: white;
+}
+
+.btn {
+    background-color: #046d82;
+    border: none;
+    padding: 12px 20px;
+    margin-top: 15px;
+    cursor: pointer;
+    font-size: 16px;
+    color: white;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #00a3cc;
+}
+
+input {
+    padding: 8px;
+    width: 80px;
+    text-align: center;
+    border-radius: 8px;
+    border: none;
+    margin-left: 10px;
+    background-color: #3a3a47;
+    color: white;
+}
+
+input:focus {
+    outline: none;
+    background-color: #4a4a5a;
+}
+
+#notification {
+    margin-top: 10px;
+    font-weight: normal;
+    color: #b3b3b3;
+}
+
+.card-footer {
+    margin-top: 15px;
+    color: #ccc;
+}
+
+.network-report, .stress-report {
+    background-color: #333;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+.network-report h3 {
+    font-size: 1.2em;
+    color: #00d4ff;
+}
+
+.network-report p {
+    font-size: 1em;
+    color: #fff;
+}
+
+.section {
+    margin: 20px 0;
+}
+
+.data {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+.data div {
+    flex: 1;
+    padding: 10px;
+    background-color: #f9f9f9;
+    margin: 0 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.data div i {
+    font-size: 40px;
+    color: #4caf50;
+}
+
+.data div p {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+.data div strong {
+    font-size: 16px;
+    color: #333;
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mask {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    width: 12.5rem;
+    height: 6.25rem;
+    margin: 1.25rem;
+  }
+  
+  .semi-circle {
+    position: relative;
+    display: block;
+    width: 12.5rem;
+    height: 6.25rem;
+    background: linear-gradient(to right, green 0%, yellow 50%, red 100%);
+    border-radius: 50% 50% 50% 50%/100% 100% 0% 0%;
+  }
+  .semi-circle::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    z-index: 2;
+    display: block;
+    width: 8.75rem;
+    height: 4.375rem;
+    margin-left: -4.375rem;
+    background: #121212;
+    border-radius: 50% 50% 50% 50%/100% 100% 0% 0%;
+  }
+  
+  .semi-circle--mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 12.5rem;
+    height: 12.5rem;
+    background: transparent;
+    transform: rotate(120deg) translate3d(0, 0, 0);
+    transform-origin: center center;
+    backface-visibility: hidden;
+    transition: all 0.3s ease-in-out;
+  }
+  .semi-circle--mask::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0%;
+    z-index: 2;
+    display: block;
+    width: 12.625rem;
+    height: 6.375rem;
+    margin: -1px 0 0 -1px;
+    background: #f2f2f2;
+    border-radius: 50% 50% 50% 50%/100% 100% 0% 0%;
+  }

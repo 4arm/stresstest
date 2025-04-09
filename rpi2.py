@@ -164,14 +164,14 @@ def get_network_metrics():
                 throughput_mbps = round(summary.get("bits_per_second", 0) / 1_000_000, 2)
                 retransmits = sender.get("retransmits", "Unavailable")
                 rtt_ms = round(result.get("end", {}).get("streams", [{}])[0].get("receiver", {}).get("mean_rtt", 0) / 1000, 2)
-
+                cpu_utilization = result.get("end", {}).get("cpu_utilization_percent", {}).get("remote_total")
                 return jsonify({
                     "client_ip": result.get("start", {}).get("connected", [{}])[0].get("local_host"),
                     "server_ip": result.get("start", {}).get("connected", [{}])[0].get("remote_host"),
                     "timestamp": result.get("start", {}).get("timestamp", {}).get("time"),
                     "sent_bytes": summary.get("bytes", 0),
                     "received_bytes": summary.get("bytes", 0),
-                    "cpu_utilization": summary.get("cpu_utilization_percent", "Unavailable"),
+                    "cpu_utilization": round(cpu_utilization, 2),
                     "throughput_mbps": throughput_mbps,
                     "retransmits": retransmits,
                     "rtt_ms": rtt_ms
@@ -180,7 +180,6 @@ def get_network_metrics():
             return jsonify({"status": "error", "message": str(e)})
     else:
         return jsonify({"status": "error", "message": "Result file not found."})
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -5,223 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Raspberry Pi Stress Test Monitor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121212;
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        h1 {
-            color: #00d4ff;
-            font-size: 2.5em;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .container {
-            width: 70%;
-            max-width: 1200px;
-            padding: 20px;
-        }
-
-        .device-card {
-            background: #2a2a3b;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .device-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
-        }
-
-        .device-card h2 {
-            font-size: 1.6em;
-            color: #00d4ff;
-            margin-bottom: 10px;
-        }
-
-        .status {
-            font-weight: bold;
-            padding: 5px 12px;
-            border-radius: 6px;
-        }
-
-        .good {
-            background-color: #00ff00;
-            color: black;
-        }
-
-        .warning {
-            background-color: #ffcc00;
-            color: black;
-        }
-
-        .critical {
-            background-color: #ff0000;
-            color: white;
-        }
-
-        .btn {
-            background-color: #046d82;
-            border: none;
-            padding: 12px 20px;
-            margin-top: 15px;
-            cursor: pointer;
-            font-size: 16px;
-            color: white;
-            border-radius: 8px;
-            transition: background-color 0.3s ease;
-        }
-
-        .btn:hover {
-            background-color: #00a3cc;
-        }
-
-        input {
-            padding: 8px;
-            width: 80px;
-            text-align: center;
-            border-radius: 8px;
-            border: none;
-            margin-left: 10px;
-            background-color: #3a3a47;
-            color: white;
-        }
-
-        input:focus {
-            outline: none;
-            background-color: #4a4a5a;
-        }
-
-        #notification {
-            margin-top: 10px;
-            font-weight: normal;
-            color: #b3b3b3;
-        }
-
-        .card-footer {
-            margin-top: 15px;
-            color: #ccc;
-        }
-
-        .network-report {
-            background-color: #333;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-        }
-
-        .network-report h3 {
-            font-size: 1.2em;
-            color: #00d4ff;
-        }
-
-        .network-report p {
-            font-size: 1em;
-            color: #fff;
-        }
-
-        .container1 {
-            width: 70%;
-            max-width: 1200px;
-            margin: 50px auto;
-            background-color: rgb(58, 61, 120);
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-        }
-
-        .section {
-            margin: 20px 0;
-        }
-
-        .data {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-
-        .data div {
-            flex: 1;
-            padding: 10px;
-            background-color: #f9f9f9;
-            margin: 0 10px;
-            border-radius: 5px;
-            text-align: center;
-        }
-
-        .data div i {
-            font-size: 40px;
-            color: #4caf50;
-        }
-    
-        .data div p {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .data div strong {
-            font-size: 16px;
-            color: #333;
-        }
-        .semi-donut{
-            --percentage: 0;
-            --fill: #ff0;
-            width: 300px;
-            height: 150px;
-            position: relative;
-            color: #fff;
-            font-size: 22px;
-            font-weight: 600;
-            overflow: hidden;
-            color: var(--fill);
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            box-sizing : border-box;
-            &:after{
-                content: '';
-                width: 300px;
-                height: 300px;
-                border:50px solid;
-                border-color : rgba(0,0,0,0.15) rgba(0,0,0,0.15) var(--fill) var(--fill);
-                position: absolute;
-                border-radius: 50%;
-                left: 0;
-                top: 0;
-                box-sizing : border-box;
-                transform: rotate( calc( 1deg * ( -45 + var(--percentage) * 1.8 ) ) );
-                animation : fillAnimation 1s ease-in;
-            }
-        }
-
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>Raspberry Pi Stress Test Monitor</h1>
     <a href="index.html">
-        <button class="btn">Back to Main Page</button>
+        <button class="btn">Back to Home Page</button>
     </a>
     <div class="container">
         <div id="deviceGrid"></div>
     </div>
 
-    <div class="container1">
+    <div class="container">
+        <div class="center">
+            <div>
+                <div class="mask">
+                    <div class="semi-circle"></div>
+                    <div class="semi-circle--mask"></div>
+                </div>
+                <div class="center" id="temperature">Loading...</div>
+            </div>
+            <div>
+                <div class="mask">
+                    <div class="semi-circle"></div>
+                    <div class="semi-circle--mask"></div>
+                </div>
+                <div class="center" id="cpu_usage">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+
+    <div class="container">
         <div id="deviceGrid1"></div>
     </div>
+    
+    <script src="app.js"></script> 
 
     <script>
         const devices = [
@@ -261,7 +81,7 @@
                         hostnameElement.innerText = data.hostname;
                         
                         stressStatusElement.innerText = data.stress_running ? "Running" : "Idle";
-                        stressStatusElement.className = `status ${data.stress_running ? "good" : "critical"}`;
+                        stressStatusElement.className = `status ${data.stress_running ? "good" : "warning"}`;
 
                         tempElement.innerText = `${data.temperature} °C`;
                         tempElement.className = `status ${getStatusClass(data.temperature, 60, 75)}`;
@@ -490,8 +310,9 @@
                         <input type="number" id="duration-${device.ip}" placeholder="20" min="5" max="60"> sec
                         <button class="btn" id="stress-btn-${device.ip}" onclick="stressTest('${device.ip}')">Stress Test CPU</button>
                         <button class="btn" id="stop-btn-${device.ip}" onclick="stopStressTest('${device.ip}')" disabled>Stop Test</button>
-                        <button class="btn" id="stress-report-${device.ip}" onclick="fetchStressReport('${device.ip}')">Stress Test Report</button>
+                        <button class="btn" onclick="fetchStressReport('${device.ip}')">Stress Test Report</button>
                         <p id="notification-${device.ip}"></p>
+                        <div id="stress-report-${device.ip}" class="stress-report"></div>
                     </div>
                 `;
             });
@@ -500,11 +321,13 @@
             grid1.innerHTML = "";
             devices.forEach(device => {
                 grid1.innerHTML += `
+                <div class="device-card">
                     <h1>Network Performance Data</h1>
                     <button class="btn" id="network-btn-${device.ip}" onclick="runNetworkTest('${device.ip}')">Run Network Test</button>
                     <p id="network-status-${device.ip}"></p>
                     <button class="btn" onclick="fetchNetworkReport('${device.ip}')">View Last Report</button>
                     <div id="network-report-${device.ip}" class="network-report"></div>
+                </div>
                 `;
             });
         }
