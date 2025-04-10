@@ -18,23 +18,60 @@
     </div>
 
     <div class="container">
-        <div class="center">
-            <div>
-                <div class="mask">
+        <div class="device-card">
+            <h2>Raspberry Pi 1 (<span id="ip" data-ip="172.18.18.20">172.18.18.20</span>) </h2>
+            <h3>Hostname: <span id="hostname">Loading...</span></h3>
+            <div class="gauge-container center">
+                <!-- Gauge for temperature usage -->
+                <div class="gauge">
+                  <div class="mask">
                     <div class="semi-circle"></div>
-                    <div class="semi-circle--mask"></div>
+                    <div class="semi-circle--mask"  id="temp-gauge"></div>
+                  </div>
+                  <div id="temperature">Loading</div>
                 </div>
-                <div class="center" id="temperature">Loading...</div>
-            </div>
-            <div>
-                <div class="mask">
+              
+                <!-- Gauge for CPU usage -->
+                <div class="gauge">
+                  <div class="mask">
                     <div class="semi-circle"></div>
-                    <div class="semi-circle--mask"></div>
+                    <div class="semi-circle--mask" id="cpu-gauge"></div>
+                  </div>
+                  <div id="cpu_usage">Loading</div>
                 </div>
-                <div class="center" id="cpu_usage">Loading...</div>
+    
+                <!-- Gauge for RAM usage -->
+                <div class="gauge">
+                    <div class="mask">
+                      <div class="semi-circle"></div>
+                      <div class="semi-circle--mask" id="ram-gauge"></div>
+                    </div>
+                    <div id="ram_usage">Loading</div>
+                </div>
+    
+                <!-- Gauge for Network Speed -->
+                <div class="gauge">
+                    <div class="mask">
+                      <div class="semi-circle"></div>
+                      <div class="semi-circle--mask" id="network-gauge"></div>
+                    </div>
+                    <div id="network_speed">Loading</div>
+                </div>
+    
+                <div class="device-card">
+                    <p>Stress Test: <span id="stress-status" class="status">Idle</span></p>
+                    <input type="number" id="duration" placeholder="20" min="5" max="60"> sec
+                    <button class="btn" id="stress-btn" onclick="stressTest()">Stress Test CPU</button>
+                    <button class="btn" id="stop-btn" onclick="stopStressTest()" disabled>Stop Test</button>
+                    <button class="btn" onclick="fetchStressReport()">Stress Test Report</button>
+                    <p id="notification"></p>
+                    <div id="stress-report" class="stress-report"></div>
+                </div>
             </div>
+            
         </div>
     </div>
+
     
 
     <div class="container">
@@ -43,298 +80,7 @@
     
     <script src="app.js"></script> 
 
-    <script>
-        const devices = [
-            { name: "Raspberry Pi 1", ip: "172.18.18.20",
-              name1: "Raspberry Pi 2", ip1: "172.18.18.50"
-            }
-        ];
 
-        function getStatusClass(value, warningThreshold, criticalThreshold) {
-            if (value >= criticalThreshold) return "critical";
-            if (value >= warningThreshold) return "warning";
-            return "good";
-        }
-
-        function updateStats() {
-            devices.forEach(device => {
-                fetch(`http://${device.ip}:5000/data`)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log(`Updating ${device.ip} - CPU: ${data.cpu_usage},
-                        Temp: ${data.temperature},
-                        Hostname: ${data.hostname},
-                        Network Speed: ${data.network_speed},
-                        Ram Usage: ${data.ram_used},
-                        Stress Test Status: ${data.stress_running}`);
-
-                        let cpuElement = document.getElementById(`cpu-${device.ip}`);
-                        let tempElement = document.getElementById(`temp-${device.ip}`);
-                        let hostnameElement = document.getElementById(`hostname-${device.ip}`);
-                        let networkSpeedElement = document.getElementById(`network-speed-${device.ip}`);
-                        let ramElement = document.getElementById(`ram_used-${device.ip}`);
-                        let stressStatusElement = document.getElementById(`stress-status-${device.ip}`);
-
-                        cpuElement.innerText = `${data.cpu_usage} %`;
-                        cpuElement.className = `status ${getStatusClass(data.cpu_usage, 50, 80)}`;
-
-                        hostnameElement.innerText = data.hostname;
-                        
-                        stressStatusElement.innerText = data.stress_running ? "Running" : "Idle";
-                        stressStatusElement.className = `status ${data.stress_running ? "good" : "warning"}`;
-
-                        tempElement.innerText = `${data.temperature} °C`;
-                        tempElement.className = `status ${getStatusClass(data.temperature, 60, 75)}`;
-                        
-                        
-
-                        ramElement.innerText = `${data.ram_used} MB`;
-                        ramElement.className = `status ${getStatusClass(data.ram_used, 1000, 2000)}`;
-
-                        networkSpeedElement.innerText = `${data.network_speed} Mbps`;
-                        networkSpeedElement.className = `status ${getStatusClass(data.network_speed, 100, 200)}`;
-                    })
-                    .catch(err => console.log(`Device ${device.ip} not responding`));
-            });
-        }
-
-        function stressTest(ip) {
-            const duration = document.getElementById(`duration-${ip}`).value || 20;
-            const notification = document.getElementById(`notification-${ip}`);
-            const stressButton = document.getElementById(`stress-btn-${ip}`);
-            const stopButton = document.getElementById(`stop-btn-${ip}`);
-
-            stressButton.disabled = true;
-            stopButton.disabled = false;
-            notification.innerText = `Stress test starting for ${duration} seconds...`;
-
-            startCountdown(ip, duration);
-
-            fetch(`http://${ip}:5000/stress`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ duration })
-            })
-            .then(response => response.json())
-            .then(data => {
-                notification.innerText = data.message;
-            })
-            .catch(err => console.log(err));
-        }
-
-        function stopStressTest(ip) {
-            const notification = document.getElementById(`notification-${ip}`);
-            const stressButton = document.getElementById(`stress-btn-${ip}`);
-            const stopButton = document.getElementById(`stop-btn-${ip}`);
-
-            fetch(`http://${ip}:5000/stop_stress`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    notification.innerText = "Stress test stopped!";
-                    clearInterval(countdownTimers[ip]);
-                    stressButton.disabled = false;
-                    stopButton.disabled = true;
-                })
-                .catch(err => console.log(err));
-        }
-
-        let countdownTimers = {};
-
-        function startCountdown(ip, duration) {
-            const notification = document.getElementById(`notification-${ip}`);
-            let timeLeft = duration;
-
-            if (countdownTimers[ip]) {
-                clearInterval(countdownTimers[ip]);
-            }
-
-            notification.innerText = `Stress test running... ${timeLeft}s left`;
-
-            countdownTimers[ip] = setInterval(() => {
-                timeLeft--;
-
-                if (timeLeft <= 0) {
-                    clearInterval(countdownTimers[ip]);
-                    notification.innerText = "Stress test completed!";
-                    document.getElementById(`stress-btn-${ip}`).disabled = false;
-                    document.getElementById(`stop-btn-${ip}`).disabled = true;
-                } else {
-                    notification.innerText = `Stress test running... ${timeLeft}s left`;
-                }
-            }, 1000);
-        }
-
-        function fetchNetworkReport(ip) {
-            const reportElement = document.getElementById(`network-report-${ip}`);
-
-            fetch(`http://${ip}:5000/network_metrics`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        reportElement.innerText = `Error: ${data.error}`;
-                    } else {
-                        reportElement.innerHTML = `
-                            <h3>Network Report for ${ip}</h3>
-                            
-                            <!-- Start Section -->
-                            <div class="section">
-                            <h2><i class="fas fa-play-circle"></i> Start Information</h2>
-                            <div class="data" id="start-section">
-                                <div>
-                                    <i class="fas fa-laptop"></i>
-                                    <p>
-                                        <strong>Client:</strong>
-                                    </p>
-                                    <p>${data.client_ip}</p>
-                                </div>
-                                <div>
-                                    <i class="fas fa-network-wired"></i>
-                                    <p>
-                                        <strong>Server:</strong>
-                                    </p>
-                                    <p>${data.server_ip}</p>
-                                </div>
-                                <div>
-                                    <i class="fas fa-clock"></i>
-                                    <p>
-                                        <strong>Timestamp:</strong>
-                                    </p>
-                                    <p>${data.timestamp}</p>
-                                </div>
-                            </div>
-                            </div>
-                        
-                            <!-- Interval Section -->
-                            <div class="section">
-                            <h2><i class="fas fa-tachometer-alt"></i> Interval Performance</h2>
-                            <div class="data" id="interval-section">
-                                <div>
-                                    <i class="fas fa-arrow-alt-circle-up"></i>
-                                    <p><strong>Bandwidth:</strong></p>
-                                    <p>${data.throughput_mbps} Mbps</p>
-                                </div>
-                                <div>
-                                    <i class="fas fa-recycle"></i>
-                                    <p><strong>Retransmits:</strong></p>
-                                    <p>${data.retransmits}</p>    
-                                </div>
-                                <div>
-                                    <i class="fas fa-random"></i>
-                                    <p><strong>RTT:</strong></p>
-                                    <p>${data.rtt_ms} ms</p>    
-                                </div>
-                            </div>
-                            </div>
-                        
-                            <!-- End Section -->
-                            <div class="section">
-                            <h2><i class="fas fa-stop-circle"></i> End Information</h2>
-                            <div class="data" id="end-section">
-                                <div>
-                                    <i class="fas fa-arrow-circle-right"></i>
-                                    <p><strong>Sent Bytes:</strong></p>
-                                    <p>${data.sent_bytes}</p>
-                                </div>
-                                <div>
-                                    <i class="fas fa-arrow-circle-left"></i>
-                                    <p><strong>Received Bytes:</strong></p>
-                                    <p>${data.received_bytes}</p>    
-                                </div>
-                                <div>
-                                    <i class="fas fa-percent"></i>
-                                    <p><strong>CPU Utilization:</strong></p>
-                                    <p>${data.cpu_utilization}%</p>    
-                                </div>
-                            </div>
-                            </div>
-                        `;
-                    }
-                })
-                .catch(err => {
-                    reportElement.innerText = "Error fetching report.";
-                });
-        }
-
-        function fetchStressReport(ip) {
-            const reportElement = document.getElementById(`stress-report-${ip}`);
-
-            fetch(`http://${ip}:5000/stress_result`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        reportElement.innerText = `Error: ${data.error}`;
-                    } else {
-                        reportElement.innerHTML = `
-                            <h3>Stress Test Report for ${ip}</h3>
-                            <p>Duration: ${data.duration}s</p>
-                            <p>CPU Usage: ${data.end.cpu_usage}%</p>
-                            <p>Temperature: ${data.end.temperature}°C</p>
-                        `;
-                    }
-                })
-                .catch(err => {
-                    console.log(err);
-                    reportElement.innerText = "Error fetching stress test report.";
-                });
-        }
-
-        
-        function runNetworkTest(ip) {
-            const notification = document.getElementById(`network-status-${ip}`);
-            notification.innerText = "Network test starting...";
-
-            fetch(`http://${ip}:5000/test_network`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    notification.innerText = data.error ? `Error: ${data.error}` : "Network test completed.";
-                })
-                .catch(err => {
-                    notification.innerText = "Error running network test.";
-                });
-        }
-
-        function generateDeviceGrid() {
-            const grid = document.getElementById("deviceGrid");
-            grid.innerHTML = "";
-
-            devices.forEach(device => {
-                grid.innerHTML += `
-                    <div class="device-card">
-                        <h2>${device.name} (${device.ip})</h2>
-                        <p>Hostname: <span id="hostname-${device.ip}" class="status">Loading...</span></p>
-                        <p>CPU Usage: <span id="cpu-${device.ip}" class="status">Loading...</span></p>
-                        <p>RAM Usage: <span id="ram_used-${device.ip}" class="status">Loading...</span></p>
-                        <p>Network Speed: <span id="network-speed-${device.ip}" class="status">Loading...</span></p>
-                        <p>Temperature: <span id="temp-${device.ip}" class="status">Loading...</span></p>
-                        <p>Stress Test: <span id="stress-status-${device.ip}" class="status">Idle</span></p>
-                        <input type="number" id="duration-${device.ip}" placeholder="20" min="5" max="60"> sec
-                        <button class="btn" id="stress-btn-${device.ip}" onclick="stressTest('${device.ip}')">Stress Test CPU</button>
-                        <button class="btn" id="stop-btn-${device.ip}" onclick="stopStressTest('${device.ip}')" disabled>Stop Test</button>
-                        <button class="btn" onclick="fetchStressReport('${device.ip}')">Stress Test Report</button>
-                        <p id="notification-${device.ip}"></p>
-                        <div id="stress-report-${device.ip}" class="stress-report"></div>
-                    </div>
-                `;
-            });
-
-            const grid1 = document.getElementById("deviceGrid1");
-            grid1.innerHTML = "";
-            devices.forEach(device => {
-                grid1.innerHTML += `
-                <div class="device-card">
-                    <h1>Network Performance Data</h1>
-                    <button class="btn" id="network-btn-${device.ip}" onclick="runNetworkTest('${device.ip}')">Run Network Test</button>
-                    <p id="network-status-${device.ip}"></p>
-                    <button class="btn" onclick="fetchNetworkReport('${device.ip}')">View Last Report</button>
-                    <div id="network-report-${device.ip}" class="network-report"></div>
-                </div>
-                `;
-            });
-        }
-
-        generateDeviceGrid();
-        setInterval(updateStats, 1000);
-    </script>
 
 <footer class="footer">
     <p>&copy; 2025 EASEHAM. All rights reserved.</p>

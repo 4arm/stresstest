@@ -18,11 +18,8 @@
     </div>
 
 
-    <div class="container device-card">
-        <h2>Raspberry Pi 2 (<span id="ip" data-ip="172.18.18.50">172.18.18.50</span>) </h2>
-        <p>Hostname: <h3><span id="hostname">Loading...</span></h3></p>
-        <div class="gauge-container center">
-            <!-- Gauge for temperature usage -->
+    <div class="container">
+        <div class="gauge-container">
             <div class="gauge">
               <div class="mask">
                 <div class="semi-circle"></div>
@@ -31,7 +28,6 @@
               <div id="temperature">Loading</div>
             </div>
           
-            <!-- Gauge for CPU usage -->
             <div class="gauge">
               <div class="mask">
                 <div class="semi-circle"></div>
@@ -39,26 +35,7 @@
               </div>
               <div id="cpu_usage">Loading</div>
             </div>
-
-            <!-- Gauge for RAM usage -->
-            <div class="gauge">
-                <div class="mask">
-                  <div class="semi-circle"></div>
-                  <div class="semi-circle--mask" id="ram-gauge"></div>
-                </div>
-                <div id="ram_usage">Loading</div>
-            </div>
-
-            <!-- Gauge for Network Speed -->
-            <div class="gauge">
-                <div class="mask">
-                  <div class="semi-circle"></div>
-                  <div class="semi-circle--mask" id="network-gauge"></div>
-                </div>
-                <div id="network_speed">Loading</div>
-            </div>
         </div>
-
     </div>
 
     <div class="container">
@@ -68,9 +45,8 @@
     <script src="app.js"></script> 
 
     <script>
-        
         const devices = [
-            { name: "Raspberry Pi 1", ip: "172.18.18.20",
+            { name: "Raspberry Pi 3", ip: "192.168.120.49",
               name1: "Raspberry Pi 2", ip1: "172.18.18.50"
             }
         ];
