@@ -13,13 +13,14 @@ CORS(app)
 hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
 RESULT_FILE = "result.json"
-rpi1 = "172.18.18.50"
-rpi2 = "172.18.18.20"
+rpi1 = "172.18.18.20"
+rpi2 = "172.18.18.50"
 
 prev_net_io = psutil.net_io_counters()
 prev_time = time.time()
 stress_running = False
 stress_report = None
+network_running = False
 network_report = None
 
 def get_temperature():
@@ -66,6 +67,7 @@ def get_system_info():
         "temperature": get_temperature(),
         "network_speed": net_speed,
         "stress_running": stress_running,
+        "network_running": network_running,
         "throughput": get_throughput()
     }
 
@@ -120,14 +122,16 @@ def get_stress_result():
 
 @app.route('/stop_stress', methods=['POST'])
 def stop_stress():
-    global stress_running
+    global stress_running, network_running
 
-    if not stress_running:
+    if not stress_running | network_running:
         return jsonify({"message": "No stress test is running"}), 400
 
     try:
         subprocess.run(["pkill", "-f", "stress-ng"])
+        subprocess.run(["pkill", "-f", "iperf3"])
         stress_running = False
+        network_running = False
         return jsonify({"message": "Stress test stopped successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -140,11 +144,28 @@ def get_report():
 
 @app.route('/test_network', methods=['POST'])
 def run_network_test():
+    global network_running, network_report
+
+    if network_running:
+        return jsonify({"message": "Network test is already running"}), 400
+
+    data = request.get_json()
+    networkDuration = int(data.get("networkDuration", 20))
+
     try:
-        command = f"iperf3 -c {rpi1} -t 10 -J > {RESULT_FILE}"
-        os.system(command)
+        network_running = True
+        with open(RESULT_FILE, "w") as outfile:
+            subprocess.Popen(
+                ["iperf3", "-c", rpi2, "-t", str(networkDuration), "-J"],
+                stdout=outfile
+            )
+
+        time.sleep(networkDuration)  # Wait for iperf3 to finish
+        network_running = False
         return jsonify({"status": "success", "message": "Network test completed."})
+
     except Exception as e:
+        network_running = False
         return jsonify({"status": "error", "message": str(e)})
 
 

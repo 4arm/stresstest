@@ -13,10 +13,8 @@
     <a href="index.html">
         <button class="btn">Back to Home Page</button>
     </a>
-    <div class="container">
-        <div id="deviceGrid"></div>
-    </div>
 
+	<!-- Cpu test -->
     <div class="container">
         <div class="device-card">
             <h2>Raspberry Pi 1 (<span id="ip" data-ip="172.18.18.20">172.18.18.20</span>) </h2>
@@ -59,19 +57,32 @@
                 </div>
     
                 <div class="device-card">
+					<h2>CPU Stress Test</h2>
                     <p>Stress Test: <span id="stress-status" class="status">Idle</span></p>
                     <input type="number" id="duration" placeholder="20" min="5" max="60"> sec
-                    <button class="btn" id="stress-btn" onclick="stressTest()">Stress Test CPU</button>
-                    <button class="btn" id="stop-btn" onclick="stopStressTest()" disabled>Stop Test</button>
+					<button class="btn" id="stress-btn" onclick="stressTest()">Stress Test CPU</button>
+                    <button class="btn" id="stop-btn" onclick="stopTest(CPUtest)" disabled>Stop Test</button>
                     <button class="btn" onclick="fetchStressReport()">Stress Test Report</button>
                     <p id="notification"></p>
                     <div id="stress-report" class="stress-report"></div>
                 </div>
+
+				<div class="device-card">
+					<h2>Network Performance Test</h2>
+					<p>Test Network: <span id="network-status" class="status">Idle</span></p>
+					<input type="number" id="network-duration" placeholder="20" min="5" max="60"> sec
+					<button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
+					<button class="btn" id="stop-network-btn" onclick="stopTest(networkTest)" disabled>Stop Test</button>
+					<button class="btn" onclick="fetchNetworkReport()">Network Test Report</button>
+					<p id="networkNotification"></p>
+					<div id="network-report" class="network-report"></div>
+				</div>
             </div>
             
         </div>
     </div>
 
+                             
     
 
     <div class="container">
@@ -82,8 +93,8 @@
 
 
 
-<footer class="footer">
-    <p>&copy; 2025 EASEHAM. All rights reserved.</p>
-</footer>
+	<footer class="footer">
+		<p>&copy; 2025 EASEHAM. All rights reserved.</p>
+	</footer>
 </body>
 </html>
