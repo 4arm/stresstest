@@ -3,11 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Monitoring Dashboard</title>
+    <title>MonitorDash</title>
+    <link rel="icon" href="/image/satellite-dish.png" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Raspberry Pi Network Monitoring</h1>
+    <nav class="navbar">
+		<div class="logo">📡 MonitorDash</div>
+		<ul class="nav-links">
+		  <li><a href="/index.html">Dashboard</a></li>
+		  
+          <li class="dropdown">
+            <a href="#">Devices</a>
+            <ul class="dropdown-menu">
+              <li><a href="#">All Devices</a></li>
+              <li><a href="#">Online</a></li>
+              <li><a href="#">Offline</a></li>
+              <li><a href="#">Groups</a></li>
+            </ul>
+          </li>
+
+		  <li><a href="#">Alerts</a></li>
+		  <li><a href="#">Logs</a></li>
+		  <li><a href="#">Settings</a></li>
+		</ul>
+	</nav>
+
     <div class="container">
         <div class="device-card">
             <h2>Raspberry Pi 1</h2>
@@ -15,8 +36,7 @@
             <a href="rpi1.html">
                 <button class="btn">Monitor</button>
             </a>
-            <div class="card-footer">IP: <span id="ip" data-ip="172.18.18.20">172.18.18.20</span>
-            </div>
+                <div class="card-footer">IP: <span id="ip" data-ip="172.18.18.20">172.18.18.20</span></div>
         </div>
 
         <div class="device-card">

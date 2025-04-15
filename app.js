@@ -1,7 +1,3 @@
-const rpi1 = "172.18.18.20"
-const rpi2 = "172.18.18.50"
-const rpi3 = "192.168.120.49"
-
 const hostnameClass = document.getElementById('hostname');
 const ipClass = document.getElementById('ip');
 
@@ -9,6 +5,7 @@ const temperatureGauge = document.getElementById('temperature');
 const cpuUsageGauge = document.getElementById('cpu_usage');
 const ramUsageGauge = document.getElementById('ram_usage');
 const networkSpeedGauge = document.getElementById('network_speed');
+const diskUsagePercentageGauge = document.getElementById('disk_usage');
 const rpi_ip = ipClass.dataset.ip;
 
 const stressStatus = document.getElementById("stress-status");
@@ -39,7 +36,10 @@ function updateGauge() {
 			const ram_used = data.ram_used;     // Make sure this matches your API
 			const network_speed = data.network_speed; // Make sure this matches your API
 			const hostname = data.hostname; // Make sure this matches your API
-			
+			const totalDiskUsage = data.disk_usage.total;
+			const usedDiskUsage = data.disk_usage.used;
+			const diskUsagePercentage = ((usedDiskUsage / totalDiskUsage) * 100).toFixed(2);
+
 			console.log("ip: ", rpi_ip);
 
 			stressStatus.innerText = data.stress_running ? "Stress Test Running" : "No Stress Test Running";
@@ -52,18 +52,21 @@ function updateGauge() {
 			const maxCPU = 100;
 			const maxRAM = 4000;
 			const maxNetworkSpeed = 1000; // Example max speed in Mbps
+			const maxDiskUsage = 100; // Example max disk usage in percentage
 
 			// Calculate angles
 			const tempAngle = Math.min(180, (temperature / maxTemp) * 180);
 			const cpuAngle = Math.min(180, (cpu_usage / maxCPU) * 180);
 			const ramAngle = Math.min(180, (ram_used / maxRAM) * 180);
 			const networkAngle = Math.min(180, (network_speed / maxNetworkSpeed) * 180);
+			const diskAngle = Math.min(180, (diskUsagePercentage / maxDiskUsage) * 180);
 
 			// Update gauge rotations
 			document.getElementById('temp-gauge').style.transform = `rotate(${tempAngle}deg)`;
 			document.getElementById('cpu-gauge').style.transform = `rotate(${cpuAngle}deg)`;
 			document.getElementById('ram-gauge').style.transform = `rotate(${ramAngle}deg)`;
 			document.getElementById('network-gauge').style.transform = `rotate(${networkAngle}deg)`;
+			document.getElementById('disk-gauge').style.transform = `rotate(${diskAngle}deg)`;
 			
 			// Update text
 			temperatureGauge.innerText = `Temp ${temperature}°C`;
@@ -72,6 +75,13 @@ function updateGauge() {
 			networkSpeedGauge.innerText = `Net Speed ${network_speed}Mbps`;
 			hostnameClass.innerText = `${hostname}`;
 			ipClass.innerText = rpi_ip;
+			diskUsagePercentageGauge.innerText = `Disk Usage ${diskUsagePercentage}%`;
+
+			fetchAndUpdateChart();
+
+			// if(temperature >= 60){
+			// 	alert("Temperature is too high!" + temperature + "°C");
+			// }
 		})
 		.catch(err => {
 		console.error("Failed to fetch data:", err);
@@ -163,9 +173,9 @@ function fetchStressReport() {
 			} else {
 				reportElement.innerHTML = `
 					<h3>Stress Test Report for ${rpi_ip}</h3>
-					<p>Duration: ${data.duration}s</p>
-					<p>CPU Usage: ${data.end.cpu_usage}%</p>
-					<p>Temperature: ${data.end.temperature}°C</p>
+					<p>Duration: ${data.report.duration}s</p>
+					<p>CPU Usage: ${data.report.end.cpu_usage}%</p>
+					<p>Temperature: ${data.report.end.temperature}°C</p>
 				`;
 			}
 		})
@@ -293,8 +303,6 @@ function runNetworkTest() {
 		.catch(err => console.log(err));
 }
 
-
-
 function getStatusClass(value, warningThreshold, criticalThreshold) {
 	if (value >= criticalThreshold) return "critical";
 	if (value >= warningThreshold) return "warning";
@@ -302,3 +310,75 @@ function getStatusClass(value, warningThreshold, criticalThreshold) {
 }
 
 setInterval(updateGauge, 2000);
+
+let chart;
+
+async function fetchAndUpdateChart() {
+  try {
+    const response = await fetch(`http://${rpi_ip}:5000/stress_result`); // your API endpoint
+    const json = await response.json();
+    const data = json.data;
+
+    const labels = data.timestamp.map(t => new Date(t).toLocaleTimeString());
+
+    const datasets = [
+      {
+        label: 'CPU Usage (%)',
+        data: data.cpu_usage,
+        borderColor: 'rgba(75, 192, 192, 1)',
+        fill: false
+      },
+      {
+        label: 'Temperature (°C)',
+        data: data.temperature,
+        borderColor: 'rgba(255, 99, 132, 1)',
+        fill: false
+      }
+    ];
+
+    if (!chart) {
+      const ctx = document.getElementById('summaryChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          animation: false,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Time'
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Value'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            }
+          }
+        }
+      });
+    } else {
+      chart.data.labels = labels;
+      chart.data.datasets.forEach((dataset, index) => {
+        dataset.data = datasets[index].data;
+      });
+      chart.update();
+    }
+
+  } catch (error) {
+    console.error("Error fetching or updating chart data:", error);
+  }
+}

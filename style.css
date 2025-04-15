@@ -246,4 +246,82 @@ input:focus {
     justify-content: center;
     gap: 15px;
     margin-bottom: 30px;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1e293b;
+    color: white;
+    padding: 10px 20px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
   }
+  
+  .logo {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  .nav-links {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+  }
+  
+  .nav-links li {
+    position: relative;
+  }
+  
+  .nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 5px;
+  }
+  
+  .nav-links a:hover {
+    text-decoration: none;
+    color: #00d4ff;
+    background-color: #334155;
+    border-radius: 8px;
+  }
+  
+  /* Dropdown styles */
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 30px;
+    left: 0;
+    background-color: #334155;
+    list-style: none;
+    padding: 10px 0;
+    border-radius: 5px;
+    min-width: 150px;
+    z-index: 1000;
+  }
+  
+  .dropdown-menu li {
+    padding: 5px 15px;
+  }
+  
+  .dropdown-menu li a {
+    color: white;
+    display: block;
+  }
+  
+  .dropdown-menu li a:hover {
+    background-color: #475569;
+    border-radius: 3px;
+  }
+  
+  /* Show dropdown on hover */
+  .dropdown:hover .dropdown-menu {
+    display: block;
+  }
+  
+  .user-profile {
+    font-size: 0.9rem;
+  }
+  

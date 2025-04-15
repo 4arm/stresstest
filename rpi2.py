@@ -6,6 +6,7 @@ import socket
 import time
 import os
 import json
+import shutil
 
 app = Flask(__name__)
 CORS(app)
@@ -22,6 +23,15 @@ stress_running = False
 stress_report = None
 network_running = False
 network_report = None
+duration = 0
+total, used, free = shutil.disk_usage("/")
+cpu_test_data_store = {
+    "timestamp": [],
+    "cpu_usage": [],
+    "temperature": [],
+    "Network_speed": [],
+    "disk_usage": []
+}
 
 def get_temperature():
     try:
@@ -58,18 +68,46 @@ def get_system_info():
 
     prev_net_io = current_net_io
     prev_time = current_time
-
-    return {
+    system_info = {
+        "status": "online",
         "hostname": hostname,
         "ip": ip_address,
         "cpu_usage": psutil.cpu_percent(),
         "ram_used": psutil.virtual_memory().used // (1024 * 1024),
         "temperature": get_temperature(),
         "network_speed": net_speed,
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
         "stress_running": stress_running,
         "network_running": network_running,
-        "throughput": get_throughput()
+        "throughput": get_throughput(),
+        "disk_usage": {
+            "total": total // (1024 * 1024),
+            "used": used // (1024 * 1024),
+            "free": free // (1024 * 1024)
+        }
     }
+    return (system_info)
+
+def store_cpu_test_data(duration):
+    global cpu_test_data_store
+
+    cpu_test_data_store["timestamp"].clear()
+    cpu_test_data_store["cpu_usage"].clear()
+    cpu_test_data_store["temperature"].clear()
+    cpu_test_data_store["Network_speed"].clear()
+    cpu_test_data_store["disk_usage"].clear()
+
+    for i in range(duration-1):
+        cpu_usage = psutil.cpu_percent(interval=1)
+        temperature = get_temperature()
+        network_speed = get_system_info()["network_speed"]
+        disk_usage = psutil.disk_usage('/').percent
+
+        cpu_test_data_store["timestamp"].append(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        cpu_test_data_store["cpu_usage"].append(cpu_usage)
+        cpu_test_data_store["temperature"].append(temperature)
+        cpu_test_data_store["Network_speed"].append(network_speed)
+        cpu_test_data_store["disk_usage"].append(disk_usage)
 
 @app.route('/data', methods=['GET'])
 def data():
@@ -90,7 +128,7 @@ def stress_test():
     try:
         stress_running = True
         subprocess.Popen(["stress-ng", "--cpu", "4", "--timeout", f"{duration}s"])
-        time.sleep(duration)
+        store_cpu_test_data(duration)
 
         end_stats = get_system_info()
 
@@ -108,17 +146,18 @@ def stress_test():
             },
             "message": "Stress test completed!"
         }
-
         stress_running = False
         return jsonify({"message": f"Stress test completed in {duration} seconds"}), 200
 
     except Exception as e:
         stress_running = False
         return jsonify({"error": str(e)}), 500
-    
+
+
 @app.route('/stress_result', methods=['GET'])
 def get_stress_result():
-    return jsonify(stress_report)
+    return jsonify({"report": stress_report,
+                    "data": cpu_test_data_store})
 
 @app.route('/stop_stress', methods=['POST'])
 def stop_stress():
@@ -167,7 +206,6 @@ def run_network_test():
     except Exception as e:
         network_running = False
         return jsonify({"status": "error", "message": str(e)})
-
 
 @app.route('/get-result', methods=['GET'])
 def getresult():

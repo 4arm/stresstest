@@ -3,16 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raspberry Pi Stress Test Monitor</title>
+    <title>MonitorDash</title>
+	<link rel="icon" href="/image/satellite-dish.png" type="image/x-icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Raspberry Pi Stress Test Monitor</h1>
-    <a href="index.html">
-        <button class="btn">Back to Home Page</button>
-    </a>
+	<!-- Navbar -->
+	<nav class="navbar">
+		<div class="logo">📡 MonitorDash</div>
+		<ul class="nav-links">
+		  <li><a href="/index.html">Dashboard</a></li>
+		  
+          <li class="dropdown">
+            <a href="#">Devices</a>
+            <ul class="dropdown-menu">
+              <li><a href="#">All Devices</a></li>
+              <li><a href="#">Online</a></li>
+              <li><a href="#">Offline</a></li>
+              <li><a href="#">Groups</a></li>
+            </ul>
+          </li>
+
+		  <li><a href="#">Alerts</a></li>
+		  <li><a href="#">Logs</a></li>
+		  <li><a href="#">Settings</a></li>
+		</ul>
+	</nav>
 
 	<!-- Cpu test -->
     <div class="container">
@@ -55,9 +73,22 @@
                     </div>
                     <div id="network_speed">Loading</div>
                 </div>
-    
+			</div>
+			
+			<div class="gauge-container center">
+				<!-- Gauge for Disk Usage -->
+				<div class="gauge">
+					<div class="mask">
+					  <div class="semi-circle"></div>
+					  <div class="semi-circle--mask" id="disk-gauge"></div>
+					</div>
+					<div id="disk_usage">Loading</div>
+				</div>
+			</div>
+			<div>
+				<!-- CPU Test Card -->
                 <div class="device-card">
-					<h2>CPU Stress Test</h2>
+					<h2>CPU Test</h2>
                     <p>Stress Test: <span id="stress-status" class="status">Idle</span></p>
                     <input type="number" id="duration" placeholder="20" min="5" max="60"> sec
 					<button class="btn" id="stress-btn" onclick="stressTest()">Stress Test CPU</button>
@@ -67,8 +98,9 @@
                     <div id="stress-report" class="stress-report"></div>
                 </div>
 
+				<!-- Network Test Card -->
 				<div class="device-card">
-					<h2>Network Performance Test</h2>
+					<h2>Network Test</h2>
 					<p>Test Network: <span id="network-status" class="status">Idle</span></p>
 					<input type="number" id="network-duration" placeholder="20" min="5" max="60"> sec
 					<button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
@@ -78,21 +110,20 @@
 					<div id="network-report" class="network-report"></div>
 				</div>
             </div>
+			<div class="lineChart device-card">
+				<h2>Summary Chart</h2>
+				<button class="btn" onclick="fetchAndUpdateChart()">Display summary</button>
+				<canvas class="device-card" id="summaryChart" width="400" height="200"></canvas>
+			</div>
             
         </div>
     </div>
-
-                             
-    
 
     <div class="container">
         <div id="deviceGrid1"></div>
     </div>
     
     <script src="app.js"></script> 
-
-
-
 	<footer class="footer">
 		<p>&copy; 2025 EASEHAM. All rights reserved.</p>
 	</footer>
