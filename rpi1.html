@@ -10,27 +10,35 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+	
 	<!-- Navbar -->
-	<nav class="navbar">
-		<div class="logo">📡 MonitorDash</div>
-		<ul class="nav-links">
-		  <li><a href="/index.html">Dashboard</a></li>
-		  
-          <li class="dropdown">
-            <a href="#">Devices</a>
-            <ul class="dropdown-menu">
-              <li><a href="#">All Devices</a></li>
-              <li><a href="#">Online</a></li>
-              <li><a href="#">Offline</a></li>
-              <li><a href="#">Groups</a></li>
-            </ul>
-          </li>
-
-		  <li><a href="#">Alerts</a></li>
-		  <li><a href="#">Logs</a></li>
-		  <li><a href="#">Settings</a></li>
-		</ul>
+	<nav class="bottom-nav">
+    
+		<!-- MonitorDash (only for small screens) -->
+		<div class="monitor-dash-wrapper">
+		  <button class="monitor-dash-btn" onclick="toggleDropdown()">
+			<i class="fas fa-bars"></i>
+			MonitorDash
+		  </button>
+		  <div class="dropdown-menu" id="dropdownMenu">
+			<a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
+			<a href="#"><i class="fas fa-desktop"></i> Devices</a>
+			<a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
+			<a href="#"><i class="fas fa-cog"></i> Settings</a>
+		  </div>
+		</div>
+	
+		<!-- Full nav links (only for wider screens) -->
+		<div class="nav-links">
+		  <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i>Dashboard</a>
+		  <a href="#" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
+		  <a href="alerts.html" class="nav-item"><i class="fas fa-bell"></i>Alerts</a>
+		  <a href="#" class="nav-item"><i class="fas fa-cog"></i>Settings</a>
+		</div>
+		
 	</nav>
+
+	
 
 	<!-- Cpu test -->
     <div class="container">

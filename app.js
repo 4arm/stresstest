@@ -382,3 +382,17 @@ async function fetchAndUpdateChart() {
     console.error("Error fetching or updating chart data:", error);
   }
 }
+
+function toggleDropdown() {
+	const dropdown = document.getElementById("dropdownMenu");
+	dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex";
+  }
+
+  // Close dropdown when clicking outside
+  window.addEventListener("click", function(e) {
+	const btn = document.querySelector(".monitor-dash-btn");
+	const dropdown = document.getElementById("dropdownMenu");
+	if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+	  dropdown.style.display = "none";
+	}
+  });

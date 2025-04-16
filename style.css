@@ -3,7 +3,7 @@ body {
     background-color: #121212;
     color: #fff;
     margin: 0;
-    padding: 0;
+    padding-top: 70px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -22,6 +22,7 @@ h1 {
     width: 70%;
     max-width: 1200px;
     padding: 20px;
+    margin: 5%;
 }
 
 .device-card {
@@ -247,81 +248,148 @@ input:focus {
     gap: 15px;
     margin-bottom: 30px;
 }
+  
 
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #1e293b;
+.filter-buttons {
+    margin-bottom: 15px;
+}
+
+.filter-buttons button {
+    margin-right: 10px;
+    padding: 8px 14px;
+    background-color: #1e40af;
     color: white;
-    padding: 10px 20px;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-  }
-  
-  .logo {
-    font-size: 1.2rem;
-    font-weight: bold;
-  }
-  
-  .nav-links {
-    list-style: none;
-    display: flex;
-    gap: 20px;
-  }
-  
-  .nav-links li {
-    position: relative;
-  }
-  
-  .nav-links a {
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
-    padding: 5px;
-  }
-  
-  .nav-links a:hover {
-    text-decoration: none;
-    color: #00d4ff;
-    background-color: #334155;
-    border-radius: 8px;
-  }
-  
-  /* Dropdown styles */
-  .dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 30px;
-    left: 0;
-    background-color: #334155;
-    list-style: none;
-    padding: 10px 0;
+    border: none;
     border-radius: 5px;
-    min-width: 150px;
-    z-index: 1000;
+    cursor: pointer;
+}
+
+.filter-buttons button:hover {
+    background-color: #1d4ed8;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1e293b;
+    border-radius: 10px;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+th {
+    background-color: #1d2053;
+}
+
+.critical-text {
+    color: red;
+    font-weight: bold;
+}
+
+.warning-text {
+    color: orange;
+    font-weight: bold;
+}
+
+.info-text {
+    color: #5b8fff;
+    font-weight: bold;
+}
+
+
+/* Navbar styling */
+
+.bottom-nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #1e293b;
+    border-bottom: 1px solid #27354a;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 60px;
+    z-index: 10;
   }
-  
-  .dropdown-menu li {
-    padding: 5px 15px;
+
+  .nav-item {
+    text-decoration: none;
+    color: #ffffff;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
   }
-  
-  .dropdown-menu li a {
-    color: white;
-    display: block;
+
+  .nav-item i {
+    font-size: 18px;
+    margin-bottom: 2px;
   }
-  
-  .dropdown-menu li a:hover {
-    background-color: #475569;
-    border-radius: 3px;
+
+  .nav-item.active {
+    color: #007bff;
   }
-  
-  /* Show dropdown on hover */
-  .dropdown:hover .dropdown-menu {
-    display: block;
+
+  /* Hide full nav items by default */
+  .nav-links {
+    display: none;
   }
-  
-  .user-profile {
-    font-size: 0.9rem;
+
+  /* MonitorDash button visible only below 384px */
+  .monitor-dash-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
   }
-  
+
+  .monitor-dash-btn i {
+    font-size: 18px;
+    margin-bottom: 2px;
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    
+    top: 60px;
+    background-color: #3a3a47;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .dropdown-menu a {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    text-decoration: none;
+    color: #333;
+    font-size: 14px;
+    background-color: #fff;
+  }
+
+  .dropdown-menu a:hover {
+    background-color: #f0f0f0;
+  }
+
+  /* If width > 384px, show full nav items and hide MonitorDash */
+  @media (min-width: 385px) {
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .monitor-dash-wrapper {
+      display: none;
+    }
+  }
