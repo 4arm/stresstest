@@ -21,7 +21,7 @@ h1 {
 .container {
     width: 70%;
     max-width: 1200px;
-    padding: 20px;
+    padding: 2px;
     margin: 5%;
 }
 
@@ -338,6 +338,12 @@ th {
   /* Hide full nav items by default */
   .nav-links {
     display: none;
+  }
+
+  .nav-links a:hover{
+    color: #007bff;
+    transform: scale(1.2);
+    transition: all 0.3s ease;
   }
 
   /* MonitorDash button visible only below 384px */

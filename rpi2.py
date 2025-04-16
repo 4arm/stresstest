@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, jsonify, request, Response, send_file
 from flask_cors import CORS
 import psutil
@@ -210,6 +211,45 @@ def run_network_test():
 @app.route('/get-result', methods=['GET'])
 def getresult():
     return jsonify({"throughput": get_throughput()})
+
+alert_log = []
+
+@app.route('/alerts', methods=['GET'])
+def get_alerts():
+    global alert_log
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # Temp check
+    cpu_temp = get_temperature()
+    if cpu_temp != "Unavailable" and cpu_temp > 80:
+        alert_log.append({
+            "time": current_time,
+            "device": rpi1,
+            "type": "Temperature",
+            "message": f"High CPU temperature: {cpu_temp:.1f}°C"
+        })
+
+    # CPU usage
+    cpu_usage = psutil.cpu_percent(interval=1)
+    if cpu_usage > 90:
+        alert_log.append({
+            "time": current_time,
+            "device": "CPU",
+            "type": "Usage",
+            "message": f"High CPU usage: {cpu_usage:.1f}%"
+        })
+
+    # RAM usage
+    ram_usage = psutil.virtual_memory().percent
+    if ram_usage > 90:
+        alert_log.append({
+            "time": current_time,
+            "device": "RAM",
+            "type": "Usage",
+            "message": f"High RAM usage: {ram_usage:.1f}%"
+        })
+
+    return jsonify({"alerts": alert_log[-50:]}), 200  # Return last 50 entries
 
 @app.route('/network_metrics', methods=['GET'])
 def get_network_metrics():
