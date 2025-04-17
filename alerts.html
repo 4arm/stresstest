@@ -35,62 +35,41 @@
 		
 	</nav>
 
+
+
 	<div class="container device-card">
-		<h1>🔔 Active Alerts</h1>
-
-		<div class="filter-buttons">
-		<button onclick="filterAlerts('all')">All</button>
-		<button onclick="filterAlerts('critical-text')">Critical</button>
-		<button onclick="filterAlerts('warning-text')">Warning</button>
-		<button onclick="filterAlerts('info-text')">Info</button>
+		<h1 class="center">🔔 Active Alerts</h1>
+		<div class="filters">
+			<label for="deviceFilter">Device:</label>
+			<select id="deviceFilter">
+				<option value="All">All</option>
+				<option value="172.18.18.20">172.18.18.20</option>
+				<option value="172.18.18.50">172.18.18.50</option>
+			</select>
+	
+			<label for="typeFilter">Type:</label>
+			<select id="typeFilter">
+				<option value="All">All</option>
+				<option value="Temperature">Temperature</option>
+				<option value="Usage">Usage</option>
+			</select>
 		</div>
-
-		<table id="alertsTable">
-		<thead>
-			<tr>
-			<th>Time</th>
-			<th>Device</th>
-			<th>Alert Type</th>
-			<th>Message</th>
-			</tr>
-		</thead>
-		<tbody>
-			<tr class="critical-text">
-			<td>2025-04-15 10:12</td>
-			<td>Device 192.168.0.20</td>
-			<td>Critical</td>
-			<td>Device offline</td>
-			</tr>
-			<tr class="warning-text">
-			<td>2025-04-15 10:05</td>
-			<td>Device 192.168.0.50</td>
-			<td>Warning</td>
-			<td>High CPU usage detected</td>
-			</tr>
-			<tr class="info-text">
-			<td>2025-04-15 09:45</td>
-			<td>Device 172.18.18.2</td>
-			<td>Info</td>
-			<td>System rebooted</td>
-			</tr>
-		</tbody>
-		</table>
-	</div>
-	<div>
-		<h2>System Alerts</h2>
-		<table id="alertTable">
-			<thead>
-				<tr>
-					<th>Time</th>
-					<th>Device</th>
-					<th>Type</th>
-					<th>Message</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr><td colspan="4">Loading alerts...</td></tr>
-			</tbody>
-		</table>
+	
+		<div class="scrollable">
+			<table id="alertTable">
+				<thead>
+					<tr>
+						<th>Time</th>
+						<th>Device</th>
+						<th>Type</th>
+						<th>Message</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr><td colspan="4">Loading alerts...</td></tr>
+				</tbody>
+			</table>
+		</div>
 	</div>
 
   <script src="app.js"></script>
@@ -104,38 +83,61 @@
       });
     }
 
-	async function fetchAlerts() {
+	let allAlerts = []; // cache alerts
+
+async function fetchAlerts() {
     try {
         const response = await fetch('http://172.18.18.20:5000/alerts');
         const data = await response.json();
-        const tbody = document.querySelector('#alertTable tbody');
-
-        tbody.innerHTML = ''; // Clear previous rows
-
-        if (data.alerts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4">No alerts.</td></tr>';
-        } else {
-            data.alerts.forEach(alert => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${alert.time}</td>
-                    <td>${alert.device}</td>
-                    <td>${alert.type}</td>
-                    <td>${alert.message}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
+        allAlerts = data.alerts;
+        applyFilters(); // update table with filters applied
     } catch (error) {
         console.error('Failed to fetch alerts:', error);
     }
 }
 
-// Run on page load and update every 5 seconds
-window.onload = () => {
+function applyFilters() {
+    const deviceFilter = document.getElementById('deviceFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+
+    const filtered = allAlerts.filter(alert => {
+        const matchDevice = deviceFilter === "All" || alert.device === deviceFilter;
+        const matchType = typeFilter === "All" || alert.type === typeFilter;
+        return matchDevice && matchType;
+    });
+
+    updateTable(filtered);
+}
+
+function updateTable(alerts) {
+    const tbody = document.querySelector('#alertTable tbody');
+    tbody.innerHTML = '';
+
+    if (alerts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No matching alerts.</td></tr>';
+    } else {
+        alerts.forEach(alert => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${alert.time}</td>
+                <td>${alert.device}</td>
+                <td>${alert.type}</td>
+                <td>${alert.message}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+}
+
+// Listen for filter changes
+document.addEventListener('DOMContentLoaded', () => {
     fetchAlerts();
     setInterval(fetchAlerts, 1000);
-};
+
+    document.getElementById('deviceFilter').addEventListener('change', applyFilters);
+    document.getElementById('typeFilter').addEventListener('change', applyFilters);
+});
+
   </script>
 </body>
 </html>

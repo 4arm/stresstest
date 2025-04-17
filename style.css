@@ -275,6 +275,13 @@ table {
     border-radius: 10px;
 }
 
+.scrollable {
+    max-height: 350px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-radius: 10px;
+}
+
 th, td {
     padding: 12px 15px;
     text-align: left;
@@ -398,4 +405,42 @@ th {
     .monitor-dash-wrapper {
       display: none;
     }
+  }
+
+
+  .filters {
+    background-color: #f9f9fb;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    max-width: fit-content;
+    margin: 1rem auto;
+  }
+  
+  .filters label {
+    font-weight: 600;
+    color: #333;
+    margin-right: 0.5rem;
+  }
+  
+  .filters select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #333;
+    font-size: 0.95rem;
+    transition: border-color 0.3s ease;
+  }
+  
+  .filters select:hover,
+  .filters select:focus {
+    border-color: #6c63ff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
   }

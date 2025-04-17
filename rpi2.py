@@ -234,7 +234,7 @@ def get_alerts():
     if cpu_usage > 90:
         alert_log.append({
             "time": current_time,
-            "device": "CPU",
+            "device": rpi1,
             "type": "Usage",
             "message": f"High CPU usage: {cpu_usage:.1f}%"
         })
@@ -244,7 +244,7 @@ def get_alerts():
     if ram_usage > 90:
         alert_log.append({
             "time": current_time,
-            "device": "RAM",
+            "device": rpi1,
             "type": "Usage",
             "message": f"High RAM usage: {ram_usage:.1f}%"
         })
