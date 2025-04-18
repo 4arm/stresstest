@@ -236,6 +236,8 @@ input:focus {
     z-index: 2;
   }
   
+
+  /* for alerts and history page */
   .label {
     margin-top: 0.5rem;
     font-size: 1rem;
@@ -278,7 +280,7 @@ table {
 .scrollable {
     max-height: 350px;
     overflow-y: auto;
-    overflow-x: hidden;
+    overflow-x: auto;
     border-radius: 10px;
 }
 
@@ -307,6 +309,9 @@ th {
     font-weight: bold;
 }
 
+.CPU { color: red; font-weight: bold; }
+.Network { color: rgb(90, 90, 255); font-weight: bold; }
+
 
 /* Navbar styling */
 
@@ -318,7 +323,7 @@ th {
     border-bottom: 1px solid #27354a;
     display: flex;
     justify-content: space-around;
-    align-items: center;
+    align-items: left;
     height: 60px;
     z-index: 10;
   }
@@ -347,21 +352,23 @@ th {
     display: none;
   }
 
+  .nav-links a {
+	transition: color 0.3s ease-in, transform 0.3s ease-out;
+  }
+
   .nav-links a:hover{
     color: #007bff;
     transform: scale(1.2);
-    transition: all 0.3s ease;
   }
 
   /* MonitorDash button visible only below 384px */
   .monitor-dash-btn {
     background: none;
     border: none;
-    font-size: 12px;
     color: #ffffff;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: left;
     cursor: pointer;
   }
 
@@ -372,7 +379,6 @@ th {
 
   .dropdown-menu {
     position: absolute;
-    
     top: 60px;
     background-color: #3a3a47;
     border: 1px solid #ccc;
@@ -380,6 +386,7 @@ th {
     display: none;
     flex-direction: column;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+	z-index: 4;
   }
 
   .dropdown-menu a {
@@ -389,6 +396,7 @@ th {
     color: #333;
     font-size: 14px;
     background-color: #fff;
+	position: relative;
   }
 
   .dropdown-menu a:hover {
@@ -396,7 +404,7 @@ th {
   }
 
   /* If width > 384px, show full nav items and hide MonitorDash */
-  @media (min-width: 385px) {
+  @media (min-width: 500px) {
     .nav-links {
       display: flex;
       gap: 20px;
@@ -405,6 +413,9 @@ th {
     .monitor-dash-wrapper {
       display: none;
     }
+	.filters{
+		display: block;
+	}
   }
 
 
@@ -444,3 +455,7 @@ th {
     outline: none;
     box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
   }
+
+.footer{
+	bottom: 0px;
+}

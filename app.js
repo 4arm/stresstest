@@ -5,7 +5,8 @@ const temperatureGauge = document.getElementById('temperature');
 const cpuUsageGauge = document.getElementById('cpu_usage');
 const ramUsageGauge = document.getElementById('ram_usage');
 const networkSpeedGauge = document.getElementById('network_speed');
-const diskUsagePercentageGauge = document.getElementById('disk_usage');
+const diskReadGauge = document.getElementById('read_speed');
+const diskWriteGauge = document.getElementById('write_speed');
 const rpi_ip = ipClass.dataset.ip;
 
 const stressStatus = document.getElementById("stress-status");
@@ -36,9 +37,8 @@ function updateGauge() {
 			const ram_used = data.ram_used;     // Make sure this matches your API
 			const network_speed = data.network_speed; // Make sure this matches your API
 			const hostname = data.hostname; // Make sure this matches your API
-			const totalDiskUsage = data.disk_usage.total;
-			const usedDiskUsage = data.disk_usage.used;
-			const diskUsagePercentage = ((usedDiskUsage / totalDiskUsage) * 100).toFixed(2);
+			const write_speed = data.write_speed; // Make sure this matches your API
+			const read_speed = data.read_speed; // Make sure this matches your API
 
 			console.log("ip: ", rpi_ip);
 
@@ -52,21 +52,24 @@ function updateGauge() {
 			const maxCPU = 100;
 			const maxRAM = 4000;
 			const maxNetworkSpeed = 1000; // Example max speed in Mbps
-			const maxDiskUsage = 100; // Example max disk usage in percentage
-
+			const maxDiskReadSpeed = 1000; // Example max speed in MB/s
+			const maxDiskWriteSpeed = 1000; // Example max speed in MB/s
+ 
 			// Calculate angles
 			const tempAngle = Math.min(180, (temperature / maxTemp) * 180);
 			const cpuAngle = Math.min(180, (cpu_usage / maxCPU) * 180);
 			const ramAngle = Math.min(180, (ram_used / maxRAM) * 180);
 			const networkAngle = Math.min(180, (network_speed / maxNetworkSpeed) * 180);
-			const diskAngle = Math.min(180, (diskUsagePercentage / maxDiskUsage) * 180);
+			const diskReadAngle = Math.min(180, (data.read_speed / maxDiskReadSpeed) * 180);
+			const diskWriteAngle = Math.min(180, (data.write_speed / maxDiskWriteSpeed) * 180);
 
 			// Update gauge rotations
 			document.getElementById('temp-gauge').style.transform = `rotate(${tempAngle}deg)`;
 			document.getElementById('cpu-gauge').style.transform = `rotate(${cpuAngle}deg)`;
 			document.getElementById('ram-gauge').style.transform = `rotate(${ramAngle}deg)`;
 			document.getElementById('network-gauge').style.transform = `rotate(${networkAngle}deg)`;
-			document.getElementById('disk-gauge').style.transform = `rotate(${diskAngle}deg)`;
+			document.getElementById('disk-read-gauge').style.transform = `rotate(${diskReadAngle}deg)`;
+			document.getElementById('disk-write-gauge').style.transform = `rotate(${diskWriteAngle}deg)`;
 			
 			// Update text
 			temperatureGauge.innerText = `Temp ${temperature}°C`;
@@ -75,7 +78,8 @@ function updateGauge() {
 			networkSpeedGauge.innerText = `Net Speed ${network_speed}Mbps`;
 			hostnameClass.innerText = `${hostname}`;
 			ipClass.innerText = rpi_ip;
-			diskUsagePercentageGauge.innerText = `Disk Usage ${diskUsagePercentage}%`;
+			diskReadGauge.innerText = `Disk Read ${data.read_speed}MB/s`;
+			diskWriteGauge.innerText = `Disk Write ${data.write_speed}MB/s`;
 
 			fetchAndUpdateChart();
 

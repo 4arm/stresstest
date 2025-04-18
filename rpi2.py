@@ -33,6 +33,8 @@ cpu_test_data_store = {
     "Network_speed": [],
     "disk_usage": []
 }
+read_speed = 0
+write_speed = 0
 
 def get_temperature():
     try:
@@ -57,6 +59,19 @@ def get_throughput():
     else:
         return "Result file not found."
 
+def get_disk_io_speed(interval=1):
+    disk_io_start = psutil.disk_io_counters()
+    time.sleep(interval)
+    disk_io_end = psutil.disk_io_counters()
+
+    read_bytes = disk_io_end.read_bytes - disk_io_start.read_bytes
+    write_bytes = disk_io_end.write_bytes - disk_io_start.write_bytes
+
+    read_speed = round(read_bytes / (1024 * 1024) / interval, 2)  # MB/s
+    write_speed = round(write_bytes / (1024 * 1024) / interval, 2)  # MB/s
+
+    return read_speed, write_speed
+
 def get_system_info():
     global prev_net_io, prev_time, stress_running
 
@@ -66,7 +81,7 @@ def get_system_info():
 
     net_speed = round(((current_net_io.bytes_sent + current_net_io.bytes_recv) -
                        (prev_net_io.bytes_sent + prev_net_io.bytes_recv)) / (1024 * 1024 * time_diff), 2)
-
+    
     prev_net_io = current_net_io
     prev_time = current_time
     system_info = {
@@ -81,11 +96,8 @@ def get_system_info():
         "stress_running": stress_running,
         "network_running": network_running,
         "throughput": get_throughput(),
-        "disk_usage": {
-            "total": total // (1024 * 1024),
-            "used": used // (1024 * 1024),
-            "free": free // (1024 * 1024)
-        }
+        "read_speed": read_speed,
+        "write_speed": write_speed,
     }
     return (system_info)
 
@@ -250,6 +262,54 @@ def get_alerts():
         })
 
     return jsonify({"alerts": alert_log[-50:]}), 200  # Return last 50 entries
+
+history_log = []
+previous_stress_running = False
+previous_network_running = False
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    global stress_running, network_running
+    global previous_stress_running, previous_network_running
+    global history_log
+
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # Stress test logging
+    if stress_running and not previous_stress_running:
+        history_log.append({
+            "time": current_time,
+            "device": rpi1,
+            "type": "CPU Test",
+            "message": "Stress test started"
+        })
+    elif not stress_running and previous_stress_running:
+        history_log.append({
+            "time": current_time,
+            "device": rpi1,
+            "type": "CPU Test",
+            "message": "Stress test stopped"
+        })
+    previous_stress_running = stress_running
+
+    # Network test logging
+    if network_running and not previous_network_running:
+        history_log.append({
+            "time": current_time,
+            "device": rpi1,
+            "type": "Network Test",
+            "message": "Network test started"
+        })
+    elif not network_running and previous_network_running:
+        history_log.append({
+            "time": current_time,
+            "device": rpi1,
+            "type": "Network Test",
+            "message": "Network test stopped"
+        })
+    previous_network_running = network_running
+
+    return jsonify({"histories": history_log[-50:]}), 200
 
 @app.route('/network_metrics', methods=['GET'])
 def get_network_metrics():
