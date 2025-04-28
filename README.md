@@ -36,8 +36,8 @@ A complete system to **stress test CPU, RAM, storage, and network performance** 
 
 ### 1. Clone this repository
 ```bash
-git clone https://github.com/yourusername/stress-test-environment.git
-cd stress-test-environment
+git clone https://github.com/4arm/stresstest.git
+cd stresstest
 ```
 
 ### 2. Install Python dependencies
