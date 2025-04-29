@@ -16,7 +16,7 @@ hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
 RESULT_FILE = "result.json"
 rpi1 = "172.18.18.20"
-rpi2 = "172.18.18.50"
+rpi2 = "192.168.0.50"
 
 prev_net_io = psutil.net_io_counters()
 prev_time = time.time()
@@ -73,7 +73,7 @@ def get_disk_io_speed(interval=1):
     return read_speed, write_speed
 
 def get_system_info():
-    global prev_net_io, prev_time, stress_running
+    global prev_net_io, prev_time, stress_running, net_speed
 
     current_net_io = psutil.net_io_counters()
     current_time = time.time()
@@ -81,7 +81,7 @@ def get_system_info():
 
     net_speed = round(((current_net_io.bytes_sent + current_net_io.bytes_recv) -
                        (prev_net_io.bytes_sent + prev_net_io.bytes_recv)) / (1024 * 1024 * time_diff), 2)
-    
+
     prev_net_io = current_net_io
     prev_time = current_time
     system_info = {
@@ -166,11 +166,28 @@ def stress_test():
         stress_running = False
         return jsonify({"error": str(e)}), 500
 
+STRESS_RESULT_FILE = "stress_result.json"
+def append_to_stress_result(entry):
+    if os.path.exists(STRESS_RESULT_FILE):
+        with open(STRESS_RESULT_FILE, 'r') as f:
+            try:
+                stress_result = json.load(f)
+            except json.JSONDecodeError:
+                stress_result = []
+    else:
+        stress_result = []
+    stress_result.append(entry)
+
+    with open(STRESS_RESULT_FILE, 'w') as f:
+        json.dump(stress_result, f, indent=4)
+
 
 @app.route('/stress_result', methods=['GET'])
 def get_stress_result():
-    return jsonify({"report": stress_report,
-                    "data": cpu_test_data_store})
+    stress_result = {"report": stress_report,
+                    "data": cpu_test_data_store}
+    append_to_stress_result(stress_result)
+    return jsonify(stress_result)
 
 @app.route('/stop_stress', methods=['POST'])
 def stop_stress():
@@ -224,92 +241,154 @@ def run_network_test():
 def getresult():
     return jsonify({"throughput": get_throughput()})
 
-alert_log = []
+ALERT_FILE = "alert.json"
+def append_to_alert_log(entry):
+    if os.path.exists(ALERT_FILE):
+        with open(ALERT_FILE, 'r') as f:
+            try:
+                alerts = json.load(f)
+            except json.JSONDecodeError:
+                alerts = []
+    else:
+        alerts = []
+    alerts.append(entry)
+
+    with open(ALERT_FILE, 'w') as f:
+        json.dump(alerts, f, indent=4)
 
 @app.route('/alerts', methods=['GET'])
 def get_alerts():
-    global alert_log
+    global net_speed
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    alerts = []
 
-    # Temp check
+    # Temperature
     cpu_temp = get_temperature()
     if cpu_temp != "Unavailable" and cpu_temp > 80:
-        alert_log.append({
+        entry = {
             "time": current_time,
             "device": rpi1,
             "type": "Temperature",
             "message": f"High CPU temperature: {cpu_temp:.1f}°C"
-        })
+        }
+        append_to_alert_log(entry)
 
-    # CPU usage
+    # CPU Usage
     cpu_usage = psutil.cpu_percent(interval=1)
     if cpu_usage > 90:
-        alert_log.append({
+        entry = {
             "time": current_time,
             "device": rpi1,
             "type": "Usage",
             "message": f"High CPU usage: {cpu_usage:.1f}%"
-        })
+        }
+        append_to_alert_log(entry)
 
-    # RAM usage
+    # RAM Usage
     ram_usage = psutil.virtual_memory().percent
     if ram_usage > 90:
-        alert_log.append({
+        entry = {
             "time": current_time,
             "device": rpi1,
             "type": "Usage",
             "message": f"High RAM usage: {ram_usage:.1f}%"
-        })
+        }
+        append_to_alert_log(entry)
 
-    return jsonify({"alerts": alert_log[-50:]}), 200  # Return last 50 entries
+    # Net Speed check (assumes net_speed is updated elsewhere)
+    if net_speed > 90:
+        entry = {
+            "time": current_time,
+            "device": rpi1,
+            "type": "Net Speed",
+            "message": f"High Network Speed: {net_speed:.1f} Mbps"
+        }
+        append_to_alert_log(entry)
 
-history_log = []
+    # Read the latest alert history from file
+    if os.path.exists(ALERT_FILE):
+        with open(ALERT_FILE, 'r') as f:
+            try:
+                alerts = json.load(f)
+            except json.JSONDecodeError:
+                alerts = []
+
+    return jsonify({"alerts": alerts[-50:]}), 200
+
+HISTORY_FILE = "history.json"
 previous_stress_running = False
 previous_network_running = False
+
+def append_to_history_log(entry):
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, 'r') as f:
+            try:
+                history = json.load(f)
+            except json.JSONDecodeError:
+                history = []
+    else:
+        history = []
+    history.append(entry)
+
+    with open(HISTORY_FILE, 'w') as f:
+        json.dump(history, f, indent=4)
 
 @app.route('/history', methods=['GET'])
 def get_history():
     global stress_running, network_running
     global previous_stress_running, previous_network_running
-    global history_log
 
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     # Stress test logging
     if stress_running and not previous_stress_running:
-        history_log.append({
+        log = {
             "time": current_time,
             "device": rpi1,
             "type": "CPU Test",
             "message": "Stress test started"
-        })
+        }
+        append_to_history_log(log)
     elif not stress_running and previous_stress_running:
-        history_log.append({
+        log = {
             "time": current_time,
             "device": rpi1,
             "type": "CPU Test",
             "message": "Stress test stopped"
-        })
+        }
+        append_to_history_log(log)
     previous_stress_running = stress_running
 
     # Network test logging
     if network_running and not previous_network_running:
-        history_log.append({
+        log = {
             "time": current_time,
             "device": rpi1,
             "type": "Network Test",
             "message": "Network test started"
-        })
+        }
+        append_to_history_log(log)
     elif not network_running and previous_network_running:
-        history_log.append({
+        log = {
             "time": current_time,
             "device": rpi1,
             "type": "Network Test",
             "message": "Network test stopped"
-        })
+        }
+        append_to_history_log(log)
     previous_network_running = network_running
 
-    return jsonify({"histories": history_log[-50:]}), 200
+    # Read full history from file
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, 'r') as f:
+            try:
+                full_history = json.load(f)
+            except json.JSONDecodeError:
+                full_history = []
+    else:
+        full_history = []
+
+    return jsonify({"histories": full_history[-50:]}), 200
 
 @app.route('/network_metrics', methods=['GET'])
 def get_network_metrics():
