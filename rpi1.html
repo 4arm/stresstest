@@ -21,7 +21,7 @@
 			</button>
 			<div class="dropdown-menu" id="dropdownMenu">
 				<a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
-				<a href="devices.html"><i class="fas fa-desktop"></i> Devices</a>
+				<a href="#"><i class="fas fa-desktop"></i> Devices</a>
 				<a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
                 <a href="history.html"><i class="fa-solid fa-folder-open"></i> History</a>
 				<a href="#"><i class="fas fa-cog"></i> Settings</a>
@@ -30,11 +30,10 @@
 	
 		<!-- Full nav links (only for wider screens) -->
 		<div class="nav-links">
-            <a href="index.html" class="nav-item"><h2>📡MonitorDash</h2></a>
+            <a href="index.html" class="nav-item"><h1>📡MonitorDash</h1></a>
             <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i>Dashboard</a>
             <a href="devices.html" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
             <a href="alerts.html" class="nav-item"><i class="fas fa-bell"></i>Alerts</a>
-            <a href="history.html" class="nav-item"><i class="fa-solid fa-folder-open"></i>History</a>
             <a href="#" class="nav-item"><i class="fas fa-cog"></i>Settings</a>
 		</div>
 		
@@ -86,22 +85,13 @@
 			</div>
 			
 			<div class="gauge-container center">
-				<!-- Gauge for Disk Write Speed -->
+				<!-- Gauge for Disk Usage -->
 				<div class="gauge">
 					<div class="mask">
 					  <div class="semi-circle"></div>
-					  <div class="semi-circle--mask" id="disk-write-gauge"></div>
+					  <div class="semi-circle--mask" id="disk-gauge"></div>
 					</div>
-					<div id="write_speed">Loading</div>
-				</div>
-
-				<!-- Gauge for Read Write Speed -->
-				<div class="gauge">
-					<div class="mask">
-					  <div class="semi-circle"></div>
-					  <div class="semi-circle--mask" id="disk-read-gauge"></div>
-					</div>
-					<div id="read_speed">Loading</div>
+					<div id="disk_usage">Loading</div>
 				</div>
 			</div>
 			<div>

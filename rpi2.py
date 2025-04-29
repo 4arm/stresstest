@@ -34,8 +34,6 @@ cpu_test_data_store = {
     "Network_speed": [],
     "disk_usage": []
 }
-read_speed = 0
-write_speed = 0
 
 def get_temperature():
     try:
@@ -59,19 +57,6 @@ def get_throughput():
             return str(e)
     else:
         return "Result file not found."
-
-def get_disk_io_speed(interval=1):
-    disk_io_start = psutil.disk_io_counters()
-    time.sleep(interval)
-    disk_io_end = psutil.disk_io_counters()
-
-    read_bytes = disk_io_end.read_bytes - disk_io_start.read_bytes
-    write_bytes = disk_io_end.write_bytes - disk_io_start.write_bytes
-
-    read_speed = round(read_bytes / (1024 * 1024) / interval, 2)  # MB/s
-    write_speed = round(write_bytes / (1024 * 1024) / interval, 2)  # MB/s
-
-    return read_speed, write_speed
 
 def get_system_info():
     global prev_net_io, prev_time, stress_running, net_speed
@@ -97,8 +82,11 @@ def get_system_info():
         "stress_running": stress_running,
         "network_running": network_running,
         "throughput": get_throughput(),
-        "read_speed": read_speed,
-        "write_speed": write_speed,
+        "disk_usage": {
+            "total": total // (1024 * 1024),
+            "used": used // (1024 * 1024),
+            "free": free // (1024 * 1024)
+        }
     }
     return (system_info)
 
@@ -280,6 +268,7 @@ def get_alerts():
         }
         append_to_alert_log(entry)
 
+<<<<<<< HEAD
     # Read the latest alert history from file
     if os.path.exists(ALERT_FILE):
         with open(ALERT_FILE, 'r') as f:
@@ -365,6 +354,8 @@ def get_history():
 
     return jsonify({"histories": full_history[-50:]}), 200
 
+=======
+>>>>>>> parent of d7ce620 (update 18/4 tambah logging system untuk alerts dan history)
 @app.route('/network_metrics', methods=['GET'])
 def get_network_metrics():
     if os.path.exists(RESULT_FILE):
