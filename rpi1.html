@@ -11,33 +11,34 @@
 </head>
 <body>
 	
-	<!-- Navbar -->
+    <!-- Navbar -->
 	<nav class="bottom-nav">
     
 		<!-- MonitorDash (only for small screens) -->
 		<div class="monitor-dash-wrapper">
-		  <button class="monitor-dash-btn" onclick="toggleDropdown()">
-			<h2>📡MonitorDash</h2>
-		  </button>
-		  <div class="dropdown-menu" id="dropdownMenu">
-			<a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
-			<a href="#"><i class="fas fa-desktop"></i> Devices</a>
-			<a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
-			<a href="#"><i class="fas fa-cog"></i> Settings</a>
-		  </div>
+			<button class="monitor-dash-btn" onclick="toggleDropdown()">
+				<h2>📡MonitorDash</h2>
+			</button>
+			<div class="dropdown-menu" id="dropdownMenu">
+				<a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
+				<a href="devices.html"><i class="fas fa-desktop"></i> Devices</a>
+				<a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
+                <a href="history.html"><i class="fa-solid fa-folder-open"></i> History</a>
+				<a href="#"><i class="fas fa-cog"></i> Settings</a>
+			</div>
 		</div>
 	
 		<!-- Full nav links (only for wider screens) -->
 		<div class="nav-links">
-            <a href="index.html" class="nav-item"><h1>📡MonitorDash</h1></a>
+            <a href="index.html" class="nav-item"><h2>📡MonitorDash</h2></a>
             <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i>Dashboard</a>
-            <a href="devices.html" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
+            <a href="devices.html" class="nav-item active"><i class="fas fa-desktop"></i>Devices</a>
             <a href="alerts.html" class="nav-item"><i class="fas fa-bell"></i>Alerts</a>
+            <a href="history.html" class="nav-item"><i class="fa-solid fa-folder-open"></i>History</a>
             <a href="#" class="nav-item"><i class="fas fa-cog"></i>Settings</a>
 		</div>
 		
 	</nav>
-
 	
 
 	<!-- Cpu test -->
@@ -82,17 +83,6 @@
                     <div id="network_speed">Loading</div>
                 </div>
 			</div>
-			
-			<div class="gauge-container center">
-				<!-- Gauge for Disk Usage -->
-				<div class="gauge">
-					<div class="mask">
-					  <div class="semi-circle"></div>
-					  <div class="semi-circle--mask" id="disk-gauge"></div>
-					</div>
-					<div id="disk_usage">Loading</div>
-				</div>
-			</div>
 			<div>
 				<!-- CPU Test Card -->
                 <div class="device-card">
@@ -111,12 +101,12 @@
 					<h2>Network Test: 172.18.18.20</h2>
 					<p>Test Network: <span id="network-status" class="status">Idle</span></p>
 					<input type="number" id="network-duration" placeholder="20" min="5" max="60"> sec
-          			<input type="text" id="target-ip" placeholder="172.18.18.50">
+					<input type="text" id="target-ip" placeholder="172.18.18.50">
 					<button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
-					<button class="btn" id="stop-network-btn" onclick="stopTest(networkTest)" disabled>Stop Test</button>
+					<button class="btn" id="stop-network-btn" onclick="stopTest()" disabled>Stop Test</button>
 					<button class="btn" onclick="fetchNetworkReport()">Network Test Report</button>
 					<p id="networkNotification"></p>
-          <p>Countdown: <span id="countdown-timer">00:00</span></p>
+					<p>Countdown: <span id="countdown-timer">00:00</span></p>
 					<div id="network-report" class="network-report"></div>
 				</div>
             </div>

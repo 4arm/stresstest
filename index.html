@@ -10,8 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-	
-	<!-- Navbar -->
+
+    <!-- Navbar -->
 	<nav class="bottom-nav">
     
 		<!-- MonitorDash (only for small screens) -->
@@ -21,7 +21,7 @@
 			</button>
 			<div class="dropdown-menu" id="dropdownMenu">
 				<a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
-				<a href="#"><i class="fas fa-desktop"></i> Devices</a>
+				<a href="devices.html"><i class="fas fa-desktop"></i> Devices</a>
 				<a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
                 <a href="history.html"><i class="fa-solid fa-folder-open"></i> History</a>
 				<a href="#"><i class="fas fa-cog"></i> Settings</a>
@@ -31,8 +31,8 @@
 		<!-- Full nav links (only for wider screens) -->
 		<div class="nav-links">
             <a href="index.html" class="nav-item"><h2>📡MonitorDash</h2></a>
-            <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i>Dashboard</a>
-            <a href="#" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
+            <a href="index.html" class="nav-item active"><i class="fas fa-chart-line"></i>Dashboard</a>
+            <a href="devices.html" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
             <a href="alerts.html" class="nav-item"><i class="fas fa-bell"></i>Alerts</a>
             <a href="history.html" class="nav-item"><i class="fa-solid fa-folder-open"></i>History</a>
             <a href="#" class="nav-item"><i class="fas fa-cog"></i>Settings</a>
@@ -40,111 +40,13 @@
 		
 	</nav>
 
-	
-
-	<!-- Cpu test -->
     <div class="container">
         <div class="device-card">
-            <h2>Raspberry Pi 1 (<span id="ip" data-ip="172.18.18.20">172.18.18.20</span>) </h2>
-            <h3>Hostname: <span id="hostname">Loading...</span></h3>
-            <div class="gauge-container center">
-                <!-- Gauge for temperature usage -->
-                <div class="gauge">
-                  <div class="mask">
-                    <div class="semi-circle"></div>
-                    <div class="semi-circle--mask"  id="temp-gauge"></div>
-                  </div>
-                  <div id="temperature">Loading</div>
-                </div>
-              
-                <!-- Gauge for CPU usage -->
-                <div class="gauge">
-                  <div class="mask">
-                    <div class="semi-circle"></div>
-                    <div class="semi-circle--mask" id="cpu-gauge"></div>
-                  </div>
-                  <div id="cpu_usage">Loading</div>
-                </div>
-    
-                <!-- Gauge for RAM usage -->
-                <div class="gauge">
-                    <div class="mask">
-                      <div class="semi-circle"></div>
-                      <div class="semi-circle--mask" id="ram-gauge"></div>
-                    </div>
-                    <div id="ram_usage">Loading</div>
-                </div>
-    
-                <!-- Gauge for Network Speed -->
-                <div class="gauge">
-                    <div class="mask">
-                      <div class="semi-circle"></div>
-                      <div class="semi-circle--mask" id="network-gauge"></div>
-                    </div>
-                    <div id="network_speed">Loading</div>
-                </div>
-			</div>
-			
-			<div class="gauge-container center">
-				<!-- Gauge for Disk Write Speed -->
-				<div class="gauge">
-					<div class="mask">
-					  <div class="semi-circle"></div>
-					  <div class="semi-circle--mask" id="disk-write-gauge"></div>
-					</div>
-					<div id="write_speed">Loading</div>
-				</div>
+            <h1>Device Monitoring</h1>
 
-				<!-- Gauge for Read Write Speed -->
-				<div class="gauge">
-					<div class="mask">
-					  <div class="semi-circle"></div>
-					  <div class="semi-circle--mask" id="disk-read-gauge"></div>
-					</div>
-					<div id="read_speed">Loading</div>
-				</div>
-			</div>
-			<div>
-				<!-- CPU Test Card -->
-                <div class="device-card">
-					<h2>CPU Test</h2>
-                    <p>Stress Test: <span id="stress-status" class="status">Idle</span></p>
-                    <input type="number" id="duration" placeholder="20" min="5" max="60"> sec
-					<button class="btn" id="stress-btn" onclick="stressTest()">Stress Test CPU</button>
-                    <button class="btn" id="stop-btn" onclick="stopTest(CPUtest)" disabled>Stop Test</button>
-                    <button class="btn" onclick="fetchStressReport()">Stress Test Report</button>
-                    <p id="notification"></p>
-                    <div id="stress-report" class="stress-report"></div>
-                </div>
-
-				<!-- Network Test Card -->
-				<div class="device-card">
-					<h2>Network Test</h2>
-					<p>Test Network: <span id="network-status" class="status">Idle</span></p>
-					<input type="number" id="network-duration" placeholder="20" min="5" max="60"> sec
-					<button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
-					<button class="btn" id="stop-network-btn" onclick="stopTest(networkTest)" disabled>Stop Test</button>
-					<button class="btn" onclick="fetchNetworkReport()">Network Test Report</button>
-					<p id="networkNotification"></p>
-					<div id="network-report" class="network-report"></div>
-				</div>
-            </div>
-			<div class="lineChart device-card">
-				<h2>Summary Chart</h2>
-				<button class="btn" onclick="fetchAndUpdateChart()">Display summary</button>
-				<canvas class="device-card" id="summaryChart" width="400" height="200"></canvas>
-			</div>
-            
         </div>
     </div>
 
-    <div class="container">
-        <div id="deviceGrid1"></div>
-    </div>
-    
-    <script src="app.js"></script> 
-	<footer class="footer">
-		<p>&copy; 2025 EASEHAM. All rights reserved.</p>
-	</footer>
+
 </body>
 </html>

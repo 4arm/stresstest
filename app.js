@@ -1,35 +1,32 @@
 const hostnameClass = document.getElementById('hostname');
- const ipClass = document.getElementById('ip');
+const ipClass = document.getElementById('ip');
  
- const temperatureGauge = document.getElementById('temperature');
- const cpuUsageGauge = document.getElementById('cpu_usage');
- const ramUsageGauge = document.getElementById('ram_usage');
- const networkSpeedGauge = document.getElementById('network_speed');
- const diskUsagePercentageGauge = document.getElementById('disk_usage');
- const diskReadGauge = document.getElementById('read_speed');
- const diskWriteGauge = document.getElementById('write_speed');
- const rpi_ip = ipClass.dataset.ip;
+const temperatureGauge = document.getElementById('temperature');
+const cpuUsageGauge = document.getElementById('cpu_usage');
+const ramUsageGauge = document.getElementById('ram_usage');
+const networkSpeedGauge = document.getElementById('network_speed');
+const rpi_ip = ipClass.dataset.ip;
  
- const stressStatus = document.getElementById("stress-status");
- const networkStatus = document.getElementById("network-status");
+const stressStatus = document.getElementById("stress-status");
+const networkStatus = document.getElementById("network-status");
  
- const CPUtest = {
+const CPUtest = {
  	rpi_ip: rpi_ip,
  	notificationId: "notification",
  	stressBtnId: "stress-btn",
  	stopBtnId: "stop-btn"
- };
+};
  
- const networkTest = {
+const networkTest = {
  	rpi_ip: rpi_ip,
  	notificationId: "networkNotification",
  	stressBtnId: "network-btn",
  	stopBtnId: "stop-network-btn"
- };
+};
  
- function updateGauge() {
+function updateGauge() {
  
- 	fetch(`http://${rpi_ip}:5000/data`)
+ 	fetch(`http://172.18.18.20:5000/data`)
  		.then(res => res.json())
  		.then(data => {
  			// Log the data for debugging
@@ -38,11 +35,6 @@ const hostnameClass = document.getElementById('hostname');
  			const ram_used = data.ram_used;     // Make sure this matches your API
  			const network_speed = data.network_speed; // Make sure this matches your API
  			const hostname = data.hostname; // Make sure this matches your API
- 			const totalDiskUsage = data.disk_usage.total;
- 			const usedDiskUsage = data.disk_usage.used;
- 			const diskUsagePercentage = ((usedDiskUsage / totalDiskUsage) * 100).toFixed(2);
- 			const write_speed = data.write_speed; // Make sure this matches your API
- 			const read_speed = data.read_speed; // Make sure this matches your API
  
  			console.log("ip: ", rpi_ip);
  
@@ -56,28 +48,19 @@ const hostnameClass = document.getElementById('hostname');
  			const maxCPU = 100;
  			const maxRAM = 4000;
  			const maxNetworkSpeed = 1000; // Example max speed in Mbps
- 			const maxDiskUsage = 100; // Example max disk usage in percentage
  
- 			const maxDiskReadSpeed = 1000; // Example max speed in MB/s
- 			const maxDiskWriteSpeed = 1000; // Example max speed in MB/s
   
  			// Calculate angles
  			const tempAngle = Math.min(180, (temperature / maxTemp) * 180);
  			const cpuAngle = Math.min(180, (cpu_usage / maxCPU) * 180);
  			const ramAngle = Math.min(180, (ram_used / maxRAM) * 180);
  			const networkAngle = Math.min(180, (network_speed / maxNetworkSpeed) * 180);
- 			const diskAngle = Math.min(180, (diskUsagePercentage / maxDiskUsage) * 180);
- 			const diskReadAngle = Math.min(180, (data.read_speed / maxDiskReadSpeed) * 180);
- 			const diskWriteAngle = Math.min(180, (data.write_speed / maxDiskWriteSpeed) * 180);
  
  			// Update gauge rotations
  			document.getElementById('temp-gauge').style.transform = `rotate(${tempAngle}deg)`;
  			document.getElementById('cpu-gauge').style.transform = `rotate(${cpuAngle}deg)`;
  			document.getElementById('ram-gauge').style.transform = `rotate(${ramAngle}deg)`;
  			document.getElementById('network-gauge').style.transform = `rotate(${networkAngle}deg)`;
- 			document.getElementById('disk-gauge').style.transform = `rotate(${diskAngle}deg)`;
- 			document.getElementById('disk-read-gauge').style.transform = `rotate(${diskReadAngle}deg)`;
- 			document.getElementById('disk-write-gauge').style.transform = `rotate(${diskWriteAngle}deg)`;
  
  			// Update text
  			temperatureGauge.innerText = `Temp ${temperature}°C`;
@@ -86,11 +69,7 @@ const hostnameClass = document.getElementById('hostname');
  			networkSpeedGauge.innerText = `Net Speed ${network_speed}Mbps`;
  			hostnameClass.innerText = `${hostname}`;
  			ipClass.innerText = rpi_ip;
- 			diskUsagePercentageGauge.innerText = `Disk Usage ${diskUsagePercentage}%`;
- 			diskReadGauge.innerText = `Disk Read ${data.read_speed}MB/s`;
- 			diskWriteGauge.innerText = `Disk Write ${data.write_speed}MB/s`;
- 
- 			fetchAndUpdateChart();
+
  
  			// if(temperature >= 60){
  			// 	alert("Temperature is too high!" + temperature + "°C");
@@ -99,9 +78,9 @@ const hostnameClass = document.getElementById('hostname');
  		.catch(err => {
  		console.error("Failed to fetch data:", err);
  		});
- }
- 
- function stressTest() {
+}
+
+function stressTest() {
  	const duration = document.getElementById("duration").value || 20;
  	const notification = document.getElementById("notification");
  	const stressButton = document.getElementById("stress-btn");
@@ -113,7 +92,7 @@ const hostnameClass = document.getElementById('hostname');
  
  	startCountdown(duration, rpi_ip, "notification", "stress-btn", "stop-btn");
  
- 	fetch(`http://${rpi_ip}:5000/stress`, {
+ 	fetch(`http://172.18.18.20:5000/stress`, {
  			method: "POST",
  			headers: { "Content-Type": "application/json" },
  			body: JSON.stringify({ duration })
@@ -123,15 +102,15 @@ const hostnameClass = document.getElementById('hostname');
  			notification.innerText = data.message;
  		})
  		.catch(err => console.log(err));
- }
+}
  
- function stopTest(ctx) {
+function stopTest(ctx) {
  	const { rpi_ip, notificationId, stressBtnId, stopBtnId } = ctx;
  	const notification = document.getElementById(notificationId);
  	const stressButton = document.getElementById(stressBtnId);
  	const stopButton = document.getElementById(stopBtnId);
  
- 	fetch(`http://${rpi_ip}:5000/stop_stress`, { method: "POST" })
+ 	fetch(`http://172.18.18.20:5000/stop_stress`, { method: "POST" })
  		.then(response => response.json())
  		.then(data => {
  			notification.innerText = "Stress test stopped!";
@@ -146,12 +125,12 @@ const hostnameClass = document.getElementById('hostname');
  			console.error("Error stopping test:", err);
  			notification.innerText = "Failed to stop stress test.";
  		});
- }
+}
  
  
- let countdownTimers = {};
+let countdownTimers = {};
  
- function startCountdown(duration, rpi_ip, notificationId, stressBtnId, stopBtnId) {
+function startCountdown(duration, rpi_ip, notificationId, stressBtnId, stopBtnId) {
  	const notification = document.getElementById(notificationId);
  	let timeLeft = duration;
  
@@ -173,9 +152,9 @@ const hostnameClass = document.getElementById('hostname');
  			notification.innerText = `Stress test running... ${timeLeft}s left`;
  		}
  	}, 1000);
- }
+}
  
- function fetchStressReport() {
+function fetchStressReport() {
  	const reportElement = document.getElementById("stress-report");
  
  	fetch(`http://${rpi_ip}:5000/stress_result`)
@@ -196,12 +175,12 @@ const hostnameClass = document.getElementById('hostname');
  			console.log(err);
  			reportElement.innerText = "Error fetching stress test report.";
  		});
- }
+}
  
- function fetchNetworkReport() {
+function fetchNetworkReport() {
  	const reportElement = document.getElementById("network-report");
  
- 	fetch(`http://${rpi_ip}:5000/network_metrics`)
+ 	fetch(`http://172.18.18.20:5000/network_metrics`)
  
  		.then(response => response.json())
  		.then(data => {
@@ -289,123 +268,187 @@ const hostnameClass = document.getElementById('hostname');
  			console.log(err);
  			reportElement.innerText = "Error fetching network test report.";
  		});
- }
+}
  
- function runNetworkTest() {
- 	const networkNotification = document.getElementById("networkNotification");
- 	const networkButton = document.getElementById("network-btn");
- 	const stopNetworkButton = document.getElementById("stop-network-btn");
- 	const networkDuration = document.getElementById("network-duration").value || 10; // Default to 20 seconds
- 	const duration = parseInt(networkDuration.value) || 20; // Default to 20 seconds
- 
- 	networkButton.disabled = true;
- 	stopNetworkButton.disabled = false;
- 	networkNotification.innerText = `Network test starting for ${networkDuration.value} seconds...`;
- 
- 	startCountdown(duration, rpi_ip, "networkNotification", "network-btn", "stop-network-btn");
- 
- 	fetch(`http://${rpi_ip}:5000/test_network`, {
- 			method: "POST",
- 			headers: { "Content-Type": "application/json" },
- 			body: JSON.stringify({ networkDuration: duration })
- 		})
- 		.then(response => response.json())
- 		.then(data => {
- 			networkNotification.innerText = data.message;
- 		})
- 		.catch(err => console.log(err));
- }
- 
- function getStatusClass(value, warningThreshold, criticalThreshold) {
+function getStatusClass(value, warningThreshold, criticalThreshold) {
  	if (value >= criticalThreshold) return "critical";
  	if (value >= warningThreshold) return "warning";
  	return "good";
- }
+}
  
- setInterval(updateGauge, 2000);
+setInterval(updateGauge, 2000);
  
- let chart;
+
  
- async function fetchAndUpdateChart() {
-   try {
-     const response = await fetch(`http://${rpi_ip}:5000/stress_result`); // your API endpoint
-     const json = await response.json();
-     const data = json.data;
- 
-     const labels = data.timestamp.map(t => new Date(t).toLocaleTimeString());
- 
-     const datasets = [
-       {
-         label: 'CPU Usage (%)',
-         data: data.cpu_usage,
-         borderColor: 'rgba(75, 192, 192, 1)',
-         fill: false
-       },
-       {
-         label: 'Temperature (°C)',
-         data: data.temperature,
-         borderColor: 'rgba(255, 99, 132, 1)',
-         fill: false
-       }
-     ];
- 
-     if (!chart) {
-       const ctx = document.getElementById('summaryChart').getContext('2d');
-       chart = new Chart(ctx, {
-         type: 'line',
-         data: {
-           labels: labels,
-           datasets: datasets
-         },
-         options: {
-           responsive: true,
-           animation: false,
-           scales: {
-             x: {
-               title: {
-                 display: true,
-                 text: 'Time'
-               }
-             },
-             y: {
-               beginAtZero: true,
-               title: {
-                 display: true,
-                 text: 'Value'
-               }
-             }
-           },
-           plugins: {
-             legend: {
-               display: true,
-               position: 'bottom'
-             }
-           }
-         }
-       });
-     } else {
-       chart.data.labels = labels;
-       chart.data.datasets.forEach((dataset, index) => {
-         dataset.data = datasets[index].data;
-       });
-       chart.update();
-     }
- 
-   } catch (error) {
-     console.error("Error fetching or updating chart data:", error);
-   }
- }
- 
- function toggleDropdown() {
+function toggleDropdown() {
  	const dropdown = document.getElementById("dropdownMenu");
  	dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex";
-   }
+}
  
    // Close dropdown when clicking outside
-   window.addEventListener("click", function(e) {
+window.addEventListener("click", function(e) {
  	const btn = document.querySelector(".monitor-dash-btn");
  	const dropdown = document.getElementById("dropdownMenu");
  	if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
  	  dropdown.style.display = "none";
  	}
-   });
+});
+
+
+  let countdownInterval;
+  let remainingTime = 0;
+
+  function runNetworkTest() {
+    const duration = parseInt(document.getElementById('network-duration').value) || 20;
+    const targetIp = document.getElementById('target-ip').value || '172.18.18.50';
+
+    if (!targetIp) {
+      alert("Please enter a target IP address.");
+      return;
+    }
+
+    document.getElementById('network-status').textContent = "Running...";
+    document.getElementById('networkNotification').textContent = `Running test to ${targetIp}`;
+    document.getElementById('stop-network-btn').disabled = false;
+
+    // Start countdown timer
+    remainingTime = duration;
+    updateCountdown();
+    countdownInterval = setInterval(() => {
+      remainingTime--;
+      updateCountdown();
+      if (remainingTime <= 0) clearInterval(countdownInterval);
+    }, 1000);
+
+    fetch(`http://172.18.18.20:5000/start_network_test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ target_ip: targetIp, duration: duration })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('networkNotification').textContent = data.message;
+    })
+    .catch(err => {
+      clearInterval(countdownInterval);
+      document.getElementById('network-status').textContent = "Error";
+      document.getElementById('networkNotification').textContent = "Failed to start test.";
+    });
+  }
+
+  function stopTest() {
+    fetch(`http://172.18.18.20:5000//stop_network_test`, {
+      method: 'POST'
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('networkNotification').textContent = data.message || "Stopped.";
+      document.getElementById('network-status').textContent = "Stopped";
+      document.getElementById('stop-network-btn').disabled = true;
+      clearInterval(countdownInterval);
+    })
+    .catch(err => {
+      document.getElementById('networkNotification').textContent = "Failed to stop test.";
+    });
+}
+
+function fetchNetworkReport() {
+	const reportElement = document.getElementById("network-report");
+
+	fetch(`http://172.18.18.20:5000/network_metrics`)
+
+		.then(response => response.json())
+		.then(data => {
+			if (data.error) {
+				reportElement.innerText = `Error: ${data.error}`;
+			} else {
+				reportElement.innerHTML = `
+					<div>
+						<!-- Start Section -->
+						<div class="section">
+							<h2><i class="fas fa-play-circle"></i> Start Information</h2>
+							<div class="data" id="start-section">
+								<div>
+									<i class="fas fa-laptop"></i>
+									<p>
+										<strong>Client:</strong>
+									</p>
+									<p>${data.client_ip}</p>
+								</div>
+								<div>
+									<i class="fas fa-network-wired"></i>
+									<p>
+										<strong>Server:</strong>
+									</p>
+									<p>${data.server_ip}</p>
+								</div>
+								<div>
+									<i class="fas fa-clock"></i>
+									<p>
+										<strong>Timestamp:</strong>
+									</p>
+									<p>${data.timestamp}</p>
+								</div>
+							</div>
+							</div>
+						
+							<!-- Interval Section -->
+							<div class="section">
+							<h2><i class="fas fa-tachometer-alt"></i> Interval Performance</h2>
+							<div class="data" id="interval-section">
+								<div>
+									<i class="fas fa-arrow-alt-circle-up"></i>
+									<p><strong>Bandwidth:</strong></p>
+									<p>${data.throughput_mbps} Mbps</p>
+								</div>
+								<div>
+									<i class="fas fa-recycle"></i>
+									<p><strong>Retransmits:</strong></p>
+									<p>${data.retransmits}</p>    
+								</div>
+								<div>
+									<i class="fas fa-random"></i>
+									<p><strong>RTT:</strong></p>
+									<p>${data.rtt_ms} ms</p>    
+								</div>
+							</div>
+							</div>
+						
+							<!-- End Section -->
+							<div class="section">
+							<h2><i class="fas fa-stop-circle"></i> End Information</h2>
+							<div class="data" id="end-section">
+								<div>
+									<i class="fas fa-arrow-circle-right"></i>
+									<p><strong>Sent Bytes:</strong></p>
+									<p>${data.sent_bytes}</p>
+								</div>
+								<div>
+									<i class="fas fa-arrow-circle-left"></i>
+									<p><strong>Received Bytes:</strong></p>
+									<p>${data.received_bytes}</p>    
+								</div>
+								<div>
+									<i class="fas fa-percent"></i>
+									<p><strong>CPU Utilization:</strong></p>
+									<p>${data.cpu_utilization}%</p>    
+								</div>
+							</div>
+						</div>
+					</div>
+				`;
+			}
+		})
+		.catch(err => {
+			console.log(err);
+			reportElement.innerText = "Error fetching network test report.";
+		});
+}
+
+  
+
+function updateCountdown() {
+	const mins = String(Math.floor(remainingTime / 60)).padStart(2, '0');
+	const secs = String(remainingTime % 60).padStart(2, '0');
+	document.getElementById('countdown-timer').textContent = `${mins}:${secs}`;
+}

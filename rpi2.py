@@ -268,8 +268,6 @@ def get_alerts():
         }
         append_to_alert_log(entry)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     # Read the latest alert history from file
     if os.path.exists(ALERT_FILE):
         with open(ALERT_FILE, 'r') as f:
@@ -355,10 +353,6 @@ def get_history():
 
     return jsonify({"histories": full_history[-50:]}), 200
 
-=======
->>>>>>> parent of d7ce620 (update 18/4 tambah logging system untuk alerts dan history)
-=======
->>>>>>> parent of d7ce620 (update 18/4 tambah logging system untuk alerts dan history)
 @app.route('/network_metrics', methods=['GET'])
 def get_network_metrics():
     if os.path.exists(RESULT_FILE):
@@ -388,43 +382,50 @@ def get_network_metrics():
     else:
         return jsonify({"status": "error", "message": "Result file not found."})
 
-# Global variables
-network_test_process = None
-test_result = ""
-is_testing = False
+network_running = False
+test_result = None
+test_lock = threading.Lock()
 
 @app.route('/start_network_test', methods=['POST'])
 def start_network_test():
-    global network_test_process, network_running, test_result
-    if is_testing:
-        return jsonify({"status": "error", "message": "Test already running."}), 400
+    global network_running, test_result
 
-    data = request.json
-    target_ip = data.get('target_ip')
-    duration = data.get('duration', 20)
+    with test_lock:
+        if network_running:
+            return jsonify({"status": "error", "message": "Test already running."}), 400
 
-    if not target_ip:
-        return jsonify({"status": "error", "message": "Missing target IP."}), 400
+        data = request.json
+        target_ip = data.get('target_ip')
+        duration = data.get('duration', 20)
 
-    # Start iperf3 test in a thread
-    def run_iperf():
-        global test_result, network_running
-        try:
-            cmd = ["iperf3", "-c", target_ip, "-t", str(duration), "--json"]
-            network_test_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = network_test_process.communicate()
-            if stdout:
-                test_result = stdout.decode('utf-8')
-            else:
-                test_result = stderr.decode('utf-8')
-        except Exception as e:
-            test_result = str(e)
-        finally:
-            network_running = False
+        if not target_ip:
+            return jsonify({"status": "error", "message": "Missing target IP."}), 400
 
-    network_running = True
-    threading.Thread(target=run_iperf).start()
-    return jsonify({"status": "started", "message": f"Testing {target_ip} for {duration} seconds."})
+        def run_test():
+            global network_running, test_result
+            try:
+                command = ["iperf3", "-c", target_ip, "-t", str(duration), "-J"]
+                result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                test_result = json.loads(result.stdout)
+                
+                # Save the result to the RESULT_FILE
+                with open(RESULT_FILE, "w") as result_file:
+                    json.dump(test_result, result_file, indent=4)
+                    
+            except subprocess.CalledProcessError as e:
+                test_result = {"error": e.stderr}
+            finally:
+                with test_lock:
+                    network_running = False
+
+        # Start the test in a separate thread
+        network_running = True
+        test_thread = threading.Thread(target=run_test)
+        test_thread.start()
+
+        return jsonify({"status": "started", "message": f"Testing {target_ip} for {duration} seconds."})
+
+
 
 @app.route('/stop_network_test', methods=['POST'])
 def stop_network_test():
