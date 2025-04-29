@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MonitorDash</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="/image/satellite-dish.png" type="image/x-icon">  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+
+    <!-- Navbar -->
+	<nav class="bottom-nav">
+    
+		<!-- MonitorDash (only for small screens) -->
+		<div class="monitor-dash-wrapper">
+			<button class="monitor-dash-btn" onclick="toggleDropdown()">
+				<h2>📡MonitorDash</h2>
+			</button>
+			<div class="dropdown-menu" id="dropdownMenu">
+				<a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
+				<a href="#"><i class="fas fa-desktop"></i> Devices</a>
+				<a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
+                <a href="history.html"><i class="fa-solid fa-folder-open"></i> History</a>
+				<a href="#"><i class="fas fa-cog"></i> Settings</a>
+			</div>
+		</div>
+	
+		<!-- Full nav links (only for wider screens) -->
+		<div class="nav-links">
+            <a href="index.html" class="nav-item"><h2>📡MonitorDash</h2></a>
+            <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i>Dashboard</a>
+            <a href="#" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
+            <a href="alerts.html" class="nav-item"><i class="fas fa-bell"></i>Alerts</a>
+            <a href="history.html" class="nav-item active"><i class="fa-solid fa-folder-open"></i>History</a>
+            <a href="#" class="nav-item"><i class="fas fa-cog"></i>Settings</a>
+		</div>
+		
+	</nav>
+
+	<div class="container device-card">
+		<h1 class="center">Test History Log</h1>
+		<div class="scrollable">
+			<table id="logTable">
+				<thead>
+				<tr>
+					<th>Time</th>
+					<th>Device</th>
+					<th>Type</th>
+					<th>Message</th>
+				</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+		
+	</div>
+
+
+  <script>
+    const apiUrl = 'http://172.18.18.20:5000/history'; // Update if needed
+
+    async function fetchHistory() {
+      try {
+        const res = await fetch(apiUrl);
+        const data = await res.json();
+
+        const tbody = document.querySelector('#logTable tbody');
+        tbody.innerHTML = ''; // Clear old rows
+
+        data.histories.reverse().forEach(entry => {
+          const row = document.createElement('tr');
+
+          row.innerHTML = `
+            <td>${entry.time}</td>
+            <td>${entry.device}</td>
+            <td class="${entry.type.includes('CPU') ? 'CPU' : 'Network'}">${entry.type}</td>
+            <td>${entry.message}</td>
+          `;
+
+          tbody.appendChild(row);
+        });
+
+      } catch (error) {
+        console.error("Error fetching history:", error);
+      }
+    }
+
+    setInterval(fetchHistory, 1000); // Poll every second
+    fetchHistory(); // Initial load
+  </script>
+</body>
+</html>

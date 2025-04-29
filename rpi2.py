@@ -269,6 +269,7 @@ def get_alerts():
         append_to_alert_log(entry)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     # Read the latest alert history from file
     if os.path.exists(ALERT_FILE):
         with open(ALERT_FILE, 'r') as f:
@@ -354,6 +355,8 @@ def get_history():
 
     return jsonify({"histories": full_history[-50:]}), 200
 
+=======
+>>>>>>> parent of d7ce620 (update 18/4 tambah logging system untuk alerts dan history)
 =======
 >>>>>>> parent of d7ce620 (update 18/4 tambah logging system untuk alerts dan history)
 @app.route('/network_metrics', methods=['GET'])

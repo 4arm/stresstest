@@ -69,6 +69,11 @@ function updateGauge() {
 			hostnameClass.innerText = `${hostname}`;
 			ipClass.innerText = rpi_ip;
 			diskUsagePercentageGauge.innerText = `Disk Usage ${diskUsagePercentage}%`;
+<<<<<<< HEAD
+=======
+
+			fetchAndUpdateChart();
+>>>>>>> parent of d7ce620 (update 18/4 tambah logging system untuk alerts dan history)
 
 			// if(temperature >= 60){
 			// 	alert("Temperature is too high!" + temperature + "°C");

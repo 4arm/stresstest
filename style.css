@@ -444,6 +444,7 @@ th {
     outline: none;
     box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
 <<<<<<< HEAD
+<<<<<<< HEAD
   }
 
 .footer {
@@ -474,6 +475,9 @@ th {
 .option:hover {
   transform: scale(1.05);
 }
+=======
+  }
+>>>>>>> parent of d7ce620 (update 18/4 tambah logging system untuk alerts dan history)
 =======
   }
 >>>>>>> parent of d7ce620 (update 18/4 tambah logging system untuk alerts dan history)
