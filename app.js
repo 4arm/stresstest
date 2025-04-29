@@ -19,13 +19,6 @@ const CPUtest = {
 	stopBtnId: "stop-btn"
 };
 
-const networkTest = {
-	rpi_ip: rpi_ip,
-	notificationId: "networkNotification",
-	stressBtnId: "network-btn",
-	stopBtnId: "stop-network-btn"
-};
-
 function updateGauge() {
 
 	fetch(`http://${rpi_ip}:5000/data`)
@@ -80,8 +73,6 @@ function updateGauge() {
 			ipClass.innerText = rpi_ip;
 			diskReadGauge.innerText = `Disk Read ${data.read_speed}MB/s`;
 			diskWriteGauge.innerText = `Disk Write ${data.write_speed}MB/s`;
-
-			fetchAndUpdateChart();
 
 			// if(temperature >= 60){
 			// 	alert("Temperature is too high!" + temperature + "°C");
@@ -189,123 +180,9 @@ function fetchStressReport() {
 		});
 }
 
-function fetchNetworkReport() {
-	const reportElement = document.getElementById("network-report");
 
-	fetch(`http://${rpi_ip}:5000/network_metrics`)
 
-		.then(response => response.json())
-		.then(data => {
-			if (data.error) {
-				reportElement.innerText = `Error: ${data.error}`;
-			} else {
-				reportElement.innerHTML = `
-					<div>
-						<!-- Start Section -->
-						<div class="section">
-							<h2><i class="fas fa-play-circle"></i> Start Information</h2>
-							<div class="data" id="start-section">
-								<div>
-									<i class="fas fa-laptop"></i>
-									<p>
-										<strong>Client:</strong>
-									</p>
-									<p>${data.client_ip}</p>
-								</div>
-								<div>
-									<i class="fas fa-network-wired"></i>
-									<p>
-										<strong>Server:</strong>
-									</p>
-									<p>${data.server_ip}</p>
-								</div>
-								<div>
-									<i class="fas fa-clock"></i>
-									<p>
-										<strong>Timestamp:</strong>
-									</p>
-									<p>${data.timestamp}</p>
-								</div>
-							</div>
-							</div>
-						
-							<!-- Interval Section -->
-							<div class="section">
-							<h2><i class="fas fa-tachometer-alt"></i> Interval Performance</h2>
-							<div class="data" id="interval-section">
-								<div>
-									<i class="fas fa-arrow-alt-circle-up"></i>
-									<p><strong>Bandwidth:</strong></p>
-									<p>${data.throughput_mbps} Mbps</p>
-								</div>
-								<div>
-									<i class="fas fa-recycle"></i>
-									<p><strong>Retransmits:</strong></p>
-									<p>${data.retransmits}</p>    
-								</div>
-								<div>
-									<i class="fas fa-random"></i>
-									<p><strong>RTT:</strong></p>
-									<p>${data.rtt_ms} ms</p>    
-								</div>
-							</div>
-							</div>
-						
-							<!-- End Section -->
-							<div class="section">
-							<h2><i class="fas fa-stop-circle"></i> End Information</h2>
-							<div class="data" id="end-section">
-								<div>
-									<i class="fas fa-arrow-circle-right"></i>
-									<p><strong>Sent Bytes:</strong></p>
-									<p>${data.sent_bytes}</p>
-								</div>
-								<div>
-									<i class="fas fa-arrow-circle-left"></i>
-									<p><strong>Received Bytes:</strong></p>
-									<p>${data.received_bytes}</p>    
-								</div>
-								<div>
-									<i class="fas fa-percent"></i>
-									<p><strong>CPU Utilization:</strong></p>
-									<p>${data.cpu_utilization}%</p>    
-								</div>
-							</div>
-						</div>
-					</div>
-				`;
-			}
-		})
-		.catch(err => {
-			console.log(err);
-			reportElement.innerText = "Error fetching network test report.";
-		});
-}
 
-function runNetworkTest() {
-	const networkNotification = document.getElementById("networkNotification");
-	const networkButton = document.getElementById("network-btn");
-	const stopNetworkButton = document.getElementById("stop-network-btn");
-	const networkDuration = document.getElementById("network-duration").value || 10; // Default to 20 seconds
-	const duration = parseInt(networkDuration.value) || 20; // Default to 20 seconds
-
-	networkButton.disabled = true;
-	stopNetworkButton.disabled = false;
-	networkNotification.innerText = `Network test starting for ${networkDuration.value} seconds...`;
-
-	startCountdown(duration, rpi_ip, "networkNotification", "network-btn", "stop-network-btn");
-
-	fetch(`http://${rpi_ip}:5000/test_network`, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ networkDuration: duration })
-		})
-		.then(response => response.json())
-		.then(data => {
-			networkNotification.innerText = data.message;
-		})
-		.catch(err => console.log(err));
-}
 
 function getStatusClass(value, warningThreshold, criticalThreshold) {
 	if (value >= criticalThreshold) return "critical";
@@ -317,75 +194,6 @@ setInterval(updateGauge, 2000);
 
 let chart;
 
-async function fetchAndUpdateChart() {
-  try {
-    const response = await fetch(`http://${rpi_ip}:5000/stress_result`); // your API endpoint
-    const json = await response.json();
-    const data = json.data;
-
-    const labels = data.timestamp.map(t => new Date(t).toLocaleTimeString());
-
-    const datasets = [
-      {
-        label: 'CPU Usage (%)',
-        data: data.cpu_usage,
-        borderColor: 'rgba(75, 192, 192, 1)',
-        fill: false
-      },
-      {
-        label: 'Temperature (°C)',
-        data: data.temperature,
-        borderColor: 'rgba(255, 99, 132, 1)',
-        fill: false
-      }
-    ];
-
-    if (!chart) {
-      const ctx = document.getElementById('summaryChart').getContext('2d');
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: datasets
-        },
-        options: {
-          responsive: true,
-          animation: false,
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'Time'
-              }
-            },
-            y: {
-              beginAtZero: true,
-              title: {
-                display: true,
-                text: 'Value'
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'bottom'
-            }
-          }
-        }
-      });
-    } else {
-      chart.data.labels = labels;
-      chart.data.datasets.forEach((dataset, index) => {
-        dataset.data = datasets[index].data;
-      });
-      chart.update();
-    }
-
-  } catch (error) {
-    console.error("Error fetching or updating chart data:", error);
-  }
-}
 
 function toggleDropdown() {
 	const dropdown = document.getElementById("dropdownMenu");
@@ -401,3 +209,179 @@ function toggleDropdown() {
 	}
   });
 
+  let networkTest = null;
+
+  let countdownTimer;
+  let testDuration;
+  
+  async function runNetworkTest() {
+	  const duration = document.getElementById('network-duration').value || 20;
+	  const targetIp = document.getElementById('target-ip').value || '172.18.18.50';
+	
+	  // Set test duration
+	  testDuration = parseInt(duration);
+  
+	  document.getElementById('network-status').innerText = 'Running...';
+	  document.getElementById('network-btn').disabled = true;
+	  document.getElementById('stop-network-btn').disabled = false;
+	
+	  // Start the countdown
+	  startCountdown(testDuration);
+  
+	  try {
+		  const response = await fetch(`http://${rpi_ip}:5000/start_network_test`, {
+			  method: 'POST',
+			  headers: {
+				  'Content-Type': 'application/json'
+			  },
+			  body: JSON.stringify({ target_ip: targetIp, duration: testDuration })
+		  });
+  
+		  const data = await response.json();
+		  if (data.status === 'started') {
+			  document.getElementById('networkNotification').innerText = data.message;
+			  document.getElementById('network-status').innerText = 'In Progress';
+		  } else {
+			  document.getElementById('networkNotification').innerText = 'Failed to start test.';
+			  document.getElementById('network-status').innerText = 'Idle';
+			  document.getElementById('network-btn').disabled = false;
+			  document.getElementById('stop-network-btn').disabled = true;
+		  }
+	  } catch (error) {
+		  console.error('Error:', error);
+		  document.getElementById('networkNotification').innerText = 'Error starting test.';
+		  document.getElementById('network-status').innerText = 'Idle';
+		  document.getElementById('network-btn').disabled = false;
+		  document.getElementById('stop-network-btn').disabled = true;
+	  }
+  }
+  
+  async function stopTest() {
+	  try {
+		  const response = await fetch(`http://${rpi_ip}:5000/stop_network_test`, {
+			  method: 'POST',
+		  });
+		  const data = await response.json();
+		  if (data.status === 'stopped') {
+			  document.getElementById('networkNotification').innerText = 'Test stopped.';
+			  clearInterval(countdownTimer); // Stop the countdown if the test is stopped
+			  document.getElementById('network-status').innerText = 'Stopped';
+		  } else {
+			  document.getElementById('networkNotification').innerText = data.message;
+		  }
+	  } catch (error) {
+		  console.error('Error:', error);
+	  } finally {
+		  document.getElementById('network-status').innerText = 'Idle';
+		  document.getElementById('network-btn').disabled = false;
+		  document.getElementById('stop-network-btn').disabled = true;
+	  }
+  }
+  
+  async function fetchNetworkReport() {
+	  try {
+		  const response = await fetch(`http://${rpi_ip}:5000/network_test_report`);
+		  const data = await response.json();
+  
+		  if (data.status === 'ok') {
+			  const report = JSON.parse(data.result);
+			  const summary = summarizeReport(report);
+			  document.getElementById('network-report').innerHTML = `
+				  <h3>Network Test Summary</h3>
+				  <pre>${summary}</pre>
+			  `;
+			  document.getElementById('network-status').innerText = 'Finished';
+		  } else {
+			  document.getElementById('networkNotification').innerText = data.message;
+		  }
+	  } catch (error) {
+		  console.error('Error:', error);
+		  document.getElementById('networkNotification').innerText = 'Error fetching report.';
+	  }
+  }
+  
+  // Function to start the countdown
+  function startCountdown(duration) {
+	  let timeLeft = duration;
+	  const countdownDisplay = document.getElementById('countdown-timer');
+	  
+	  countdownTimer = setInterval(() => {
+		  const minutes = Math.floor(timeLeft / 60);
+		  const seconds = timeLeft % 60;
+		  countdownDisplay.innerText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+		  
+		  if (timeLeft <= 0) {
+			  clearInterval(countdownTimer); // Stop the countdown when the time is up
+			  fetchNetworkReport(); // Automatically fetch the report when the test finishes
+			  document.getElementById('network-status').innerText = 'Finished';
+		  } else {
+			  timeLeft--;
+		  }
+	  }, 1000);
+  }
+  
+  function summarizeReport(report) {
+	  const summary = [];
+
+	  console.log('Full report:', report);
+
+  
+	  // Ensure 'end' and 'sum' exist before accessing them
+	  if (report.end && report.end.sum) {
+		  // Summary of bandwidth
+		  if (report.end.sum.received_bps) {
+			  const bandwidth = report.end.sum.received_bps / 1e6; // Convert to Mbps
+			  summary.push(`Total Bandwidth: ${bandwidth.toFixed(2)} Mbps`);
+		  }
+  
+		  // Summary of latency (if available)
+		  if (report.end.sum.hasOwnProperty('jitter_ms')) {
+			  const jitter = report.end.sum.jitter_ms;
+			  summary.push(`Average Jitter: ${jitter.toFixed(2)} ms`);
+		  }
+  
+		  // Summary of retransmissions
+		  if (report.end.sum.hasOwnProperty('retransmits')) {
+			  const retransmits = report.end.sum.retransmits;
+			  summary.push(`Retransmissions: ${retransmits}`);
+		  }
+  
+		  // TCP connection stats (if available)
+		  if (report.end.sum.hasOwnProperty('tcp_congestion')) {
+			  const congestion = report.end.sum.tcp_congestion;
+			  summary.push(`TCP Congestion: ${congestion}`);
+		  }
+	  }
+  
+	  // If there are multiple streams, summarize their results
+	  if (report.streams) {
+		  report.streams.forEach((stream, index) => {
+			  if (stream.sender) {
+				  const sender = stream.sender;
+				  const bandwidth = sender.bits_per_second / 1e6; // Convert to Mbps
+				  summary.push(`Stream ${index + 1}: Bandwidth: ${bandwidth.toFixed(2)} Mbps`);
+			  }
+		  });
+	  }
+  
+	  // Check if we have any other interesting data
+	  if (report.start && report.start.timestamp) {
+		const timestamp = report.start.timestamp;
+		if (timestamp.timesecs) {  // iperf3 JSON usually has 'timesecs'
+			const testStartTime = new Date(timestamp.timesecs * 1000).toLocaleString();
+			summary.push(`Test Start Time: ${testStartTime}`);
+		} else {
+			summary.push(`Test Start Time: Unknown`);
+		}
+
+	  if (report.start) {
+		const local_host = report.start.connected.local_host;
+		const remote_host = report.start.connectec.remote_host;
+		summary.push(`Tested host: ${local_host}`);
+		summary.push(`Server host: ${remote_host}`);
+	  }
+	}
+  
+	  return summary.join("\n");
+  }
+  

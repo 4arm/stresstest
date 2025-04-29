@@ -45,7 +45,7 @@
 	<!-- Cpu test -->
     <div class="container">
         <div class="device-card">
-            <h2>Raspberry Pi 1 (<span id="ip" data-ip="172.18.18.20">172.18.18.20/192.168.0.20</span>) </h2>
+            <h2>Raspberry Pi 1 (<span id="ip" data-ip="172.18.18.20">172.18.18.20</span>) </h2>
             <h3>Hostname: <span id="hostname">Loading...</span></h3>
             <div class="gauge-container center">
                 <!-- Gauge for temperature usage -->
@@ -119,27 +119,19 @@
 
 				<!-- Network Test Card -->
 				<div class="device-card">
-					<h2>Network Test: 192.168.0.20 -> 192.168.0.50</h2>
+					<h2>Network Test: 172.18.18.20</h2>
 					<p>Test Network: <span id="network-status" class="status">Idle</span></p>
 					<input type="number" id="network-duration" placeholder="20" min="5" max="60"> sec
+          			<input type="text" id="target-ip" placeholder="172.18.18.50">
 					<button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
 					<button class="btn" id="stop-network-btn" onclick="stopTest(networkTest)" disabled>Stop Test</button>
 					<button class="btn" onclick="fetchNetworkReport()">Network Test Report</button>
 					<p id="networkNotification"></p>
+          <p>Countdown: <span id="countdown-timer">00:00</span></p>
 					<div id="network-report" class="network-report"></div>
 				</div>
             </div>
-			<div class="lineChart device-card">
-				<h2>Summary Chart</h2>
-				<button class="btn" onclick="fetchAndUpdateChart()">Display summary</button>
-				<canvas class="device-card" id="summaryChart" width="400" height="200"></canvas>
-			</div>
-            
         </div>
-    </div>
-
-    <div class="container">
-        <div id="deviceGrid1"></div>
     </div>
     
     <script src="app.js"></script> 

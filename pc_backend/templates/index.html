@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Network Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        select, button { margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<h2>Choose Two Devices to Test</h2>
+
+<label>Device A:</label>
+<select id="deviceA"></select><br>
+
+<label>Device B:</label>
+<select id="deviceB"></select><br>
+
+<button onclick="startTest()">Start Test</button>
+
+<h3>Results:</h3>
+<pre id="results"></pre>
+
+<script>
+const devices = [
+    { name: "RPI1", ip: "172.18.18.20" },
+    { name: "RPI2", ip: "172.18.18.50" },
+    { name: "RPI3", ip: "192.168.0.60" },
+    // Add more RPIs here
+];
+
+const deviceA = document.getElementById('deviceA');
+const deviceB = document.getElementById('deviceB');
+const results = document.getElementById('results');
+
+// Populate dropdowns
+devices.forEach(d => {
+    const optionA = document.createElement('option');
+    optionA.value = d.ip;
+    optionA.text = d.name;
+    deviceA.add(optionA);
+
+    const optionB = document.createElement('option');
+    optionB.value = d.ip;
+    optionB.text = d.name;
+    deviceB.add(optionB);
+});
+
+async function startTest() {
+    const ipA = deviceA.value;
+    const ipB = deviceB.value;
+    
+    if (ipA === ipB) {
+        alert("Select two different devices!");
+        return;
+    }
+    
+    results.textContent = "Starting tests...";
+
+    // Tell Device A to test Device B
+    await fetch(`http://${ipA}:6000/start_test`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_ip: ipB })
+    });
+
+    // Tell Device B to test Device A
+    await fetch(`http://${ipB}:6000/start_test`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target_ip: ipA })
+    });
+
+    // Wait a few seconds for the test to complete
+    await new Promise(resolve => setTimeout(resolve, 10000));
+
+    // Fetch results from both
+    const resA = await fetch(`http://${ipA}:5000/get_results`);
+    const dataA = await resA.json();
+
+    const resB = await fetch(`http://${ipB}:5000/get_results`);
+    const dataB = await resB.json();
+
+    results.textContent = `Device A (${ipA}) Results:\n${JSON.stringify(dataA, null, 2)}\n\nDevice B (${ipB}) Results:\n${JSON.stringify(dataB, null, 2)}`;
+}
+</script>
+
+</body>
+</html>

@@ -1,4 +1,5 @@
 from datetime import datetime
+import threading
 from flask import Flask, jsonify, request, Response, send_file
 from flask_cors import CORS
 import psutil
@@ -211,32 +212,6 @@ def get_report():
         return jsonify(stress_report)
     return jsonify({"message": "No stress test report available"}), 404
 
-@app.route('/test_network', methods=['POST'])
-def run_network_test():
-    global network_running, network_report
-
-    if network_running:
-        return jsonify({"message": "Network test is already running"}), 400
-
-    data = request.get_json()
-    networkDuration = int(data.get("networkDuration", 20))
-
-    try:
-        network_running = True
-        with open(RESULT_FILE, "w") as outfile:
-            subprocess.Popen(
-                ["iperf3", "-c", rpi2, "-t", str(networkDuration), "-J"],
-                stdout=outfile
-            )
-
-        time.sleep(networkDuration)  # Wait for iperf3 to finish
-        network_running = False
-        return jsonify({"status": "success", "message": "Network test completed."})
-
-    except Exception as e:
-        network_running = False
-        return jsonify({"status": "error", "message": str(e)})
-
 @app.route('/get-result', methods=['GET'])
 def getresult():
     return jsonify({"throughput": get_throughput()})
@@ -418,6 +393,61 @@ def get_network_metrics():
             return jsonify({"status": "error", "message": str(e)})
     else:
         return jsonify({"status": "error", "message": "Result file not found."})
+
+# Global variables
+network_test_process = None
+test_result = ""
+is_testing = False
+
+@app.route('/start_network_test', methods=['POST'])
+def start_network_test():
+    global network_test_process, network_running, test_result
+    if is_testing:
+        return jsonify({"status": "error", "message": "Test already running."}), 400
+
+    data = request.json
+    target_ip = data.get('target_ip')
+    duration = data.get('duration', 20)
+
+    if not target_ip:
+        return jsonify({"status": "error", "message": "Missing target IP."}), 400
+
+    # Start iperf3 test in a thread
+    def run_iperf():
+        global test_result, network_running
+        try:
+            cmd = ["iperf3", "-c", target_ip, "-t", str(duration), "--json"]
+            network_test_process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = network_test_process.communicate()
+            if stdout:
+                test_result = stdout.decode('utf-8')
+            else:
+                test_result = stderr.decode('utf-8')
+        except Exception as e:
+            test_result = str(e)
+        finally:
+            network_running = False
+
+    network_running = True
+    threading.Thread(target=run_iperf).start()
+    return jsonify({"status": "started", "message": f"Testing {target_ip} for {duration} seconds."})
+
+@app.route('/stop_network_test', methods=['POST'])
+def stop_network_test():
+    global network_test_process, network_running
+    if network_test_process and network_running:
+        network_test_process.terminate()
+        network_running = False
+        return jsonify({"status": "stopped"})
+    else:
+        return jsonify({"status": "error", "message": "No running test to stop."}), 400
+
+@app.route('/network_test_report', methods=['GET'])
+def network_test_report():
+    global test_result
+    if not test_result:
+        return jsonify({"status": "error", "message": "No test result available yet."}), 400
+    return jsonify({"status": "ok", "result": test_result})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
