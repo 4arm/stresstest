@@ -452,3 +452,5 @@ function updateCountdown() {
 	const secs = String(remainingTime % 60).padStart(2, '0');
 	document.getElementById('countdown-timer').textContent = `${mins}:${secs}`;
 }
+
+

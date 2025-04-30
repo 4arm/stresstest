@@ -48,9 +48,11 @@
 				<button class="btn" type="submit">Add / Update Device</button>
 			</form>
 		</div>
+
+		<span id="deviceList"></span>
 	</div>
 
-	<span id="deviceList"></span>
+	
 
 	<script>
 		async function loadDevices() {
@@ -60,7 +62,6 @@
 		list.innerHTML = '';
 		devices.forEach((d, index) => {
 			const item = document.createElement('div');
-			item.className = 'device-item';
 			item.innerHTML = 
 			`
 				<div class="device-card">
@@ -111,8 +112,8 @@
 		}).then(() => loadDevices());
 		}
 
-		function monitorDevice(){
-
+		function monitorDevice(ip){
+			window.open(`rpi1.html`);
 		}
 
 		loadDevices();
