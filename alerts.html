@@ -55,8 +55,17 @@
 				<option value="All">All</option>
 				<option value="Temperature">Temperature</option>
 				<option value="Usage">Usage</option>
+				<option value="Net Speed">Net Speed</option>
 			</select>
 		</div>
+
+        <div class="set__threshold__form">
+            <button class="btn">
+                <a href="set.html" style="text-decoration: none; color: white;">
+                    Set Thresholds
+                </a>
+            </button>
+        </div>
 	
 		<div class="scrollable">
 			<table id="alertTable">
@@ -88,63 +97,63 @@
 
 	let allAlerts = []; // cache alerts
 
-async function fetchAlerts() {
-    try {
-        const response = await fetch('http://172.18.18.20:5000/alerts');
-        const data = await response.json();
-        allAlerts = data.alerts;
-        applyFilters(); // update table with filters applied
-    } catch (error) {
-        console.error('Failed to fetch alerts:', error);
+    async function fetchAlerts() {
+        try {
+            const response = await fetch('http://172.18.18.20:5000/alerts');
+            const data = await response.json();
+            allAlerts = data.alerts;
+            applyFilters(); // update table with filters applied
+        } catch (error) {
+            console.error('Failed to fetch alerts:', error);
+        }
     }
-}
 
-function applyFilters() {
-    const deviceFilter = document.getElementById('deviceFilter').value;
-    const typeFilter = document.getElementById('typeFilter').value;
+    function applyFilters() {
+        const deviceFilter = document.getElementById('deviceFilter').value;
+        const typeFilter = document.getElementById('typeFilter').value;
 
-    const filtered = allAlerts.filter(alert => {
-        const matchDevice = deviceFilter === "All" || alert.device === deviceFilter;
-        const matchType = typeFilter === "All" || alert.type === typeFilter;
-        return matchDevice && matchType;
-    });
-
-    updateTable(filtered);
-}
-
-function updateTable(alerts) {
-    const tbody = document.querySelector('#alertTable tbody');
-    tbody.innerHTML = ''; // Clear existing rows
-
-    if (alerts.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4">No matching alerts.</td></tr>';
-    } else {
-        alerts.forEach(alert => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${alert.time}</td>
-                <td>${alert.device}</td>
-                <td>${alert.type}</td>
-                <td>${alert.message}</td>
-            `;
-            tbody.appendChild(row);
+        const filtered = allAlerts.filter(alert => {
+            const matchDevice = deviceFilter === "All" || alert.device === deviceFilter;
+            const matchType = typeFilter === "All" || alert.type === typeFilter;
+            return matchDevice && matchType;
         });
+
+        updateTable(filtered);
     }
-}
 
-// Listen for filter changes
-document.addEventListener('DOMContentLoaded', () => {
-    fetchAlerts();
-    setInterval(fetchAlerts, 1000);
+    function updateTable(alerts) {
+        const tbody = document.querySelector('#alertTable tbody');
+        tbody.innerHTML = ''; // Clear existing rows
 
-    document.getElementById('deviceFilter').addEventListener('change', applyFilters);
-    document.getElementById('typeFilter').addEventListener('change', applyFilters);
-});
+        if (alerts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">No matching alerts.</td></tr>';
+        } else {
+            alerts.forEach(alert => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${alert.time}</td>
+                    <td>${alert.device}</td>
+                    <td>${alert.type}</td>
+                    <td>${alert.message}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    }
+
+    // Listen for filter changes
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchAlerts();
+        setInterval(fetchAlerts, 1000);
+
+        document.getElementById('deviceFilter').addEventListener('change', applyFilters);
+        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+    });
 
   </script>
 
-<div class="footer">
-	<p>&copy; 2025 EASEHAM. All rights reserved.</p>
-</div>
+    <div class="footer">
+        <p>&copy; 2025 EASEHAM. All rights reserved.</p>
+    </div>
 </body>
 </html>

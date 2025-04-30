@@ -205,6 +205,8 @@ def getresult():
     return jsonify({"throughput": get_throughput()})
 
 ALERT_FILE = "alert.json"
+THRESHOLD_FILE = "thresholds.json"
+
 def append_to_alert_log(entry):
     if os.path.exists(ALERT_FILE):
         with open(ALERT_FILE, 'r') as f:
@@ -219,15 +221,34 @@ def append_to_alert_log(entry):
     with open(ALERT_FILE, 'w') as f:
         json.dump(alerts, f, indent=4)
 
+def load_thresholds():
+    if os.path.exists(THRESHOLD_FILE):
+        with open(THRESHOLD_FILE, 'r') as f:
+            try:
+                thresholds = json.load(f)
+            except json.JSONDecodeError:
+                thresholds = {}
+    else:
+        thresholds = {
+            "cpu_temp_threshold": 70,
+            "cpu_usage_threshold": 90,
+            "ram_usage_threshold": 90,
+            "net_speed_threshold": 90
+        }
+        # Create default thresholds file if not present
+        with open(THRESHOLD_FILE, 'w') as f:
+            json.dump(thresholds, f, indent=4)
+    return thresholds
+
 @app.route('/alerts', methods=['GET'])
 def get_alerts():
-    global net_speed
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     alerts = []
+    thresholds = load_thresholds()
 
-    # Temperature
+    # Temperature check
     cpu_temp = get_temperature()
-    if cpu_temp != "Unavailable" and cpu_temp > 80:
+    if cpu_temp != "Unavailable" and cpu_temp > thresholds["cpu_temp_threshold"]:
         entry = {
             "time": current_time,
             "device": rpi1,
@@ -236,9 +257,9 @@ def get_alerts():
         }
         append_to_alert_log(entry)
 
-    # CPU Usage
+    # CPU Usage check
     cpu_usage = psutil.cpu_percent(interval=1)
-    if cpu_usage > 90:
+    if cpu_usage > thresholds["cpu_usage_threshold"]:
         entry = {
             "time": current_time,
             "device": rpi1,
@@ -247,9 +268,9 @@ def get_alerts():
         }
         append_to_alert_log(entry)
 
-    # RAM Usage
+    # RAM Usage check
     ram_usage = psutil.virtual_memory().percent
-    if ram_usage > 90:
+    if ram_usage > thresholds["ram_usage_threshold"]:
         entry = {
             "time": current_time,
             "device": rpi1,
@@ -258,8 +279,9 @@ def get_alerts():
         }
         append_to_alert_log(entry)
 
-    # Net Speed check (assumes net_speed is updated elsewhere)
-    if net_speed > 90:
+    # Net Speed check 
+    global net_speed
+    if net_speed > thresholds["net_speed_threshold"]:
         entry = {
             "time": current_time,
             "device": rpi1,
@@ -268,7 +290,7 @@ def get_alerts():
         }
         append_to_alert_log(entry)
 
-    # Read the latest alert history from file
+    # Read the latest alert history from the file
     if os.path.exists(ALERT_FILE):
         with open(ALERT_FILE, 'r') as f:
             try:
@@ -277,6 +299,44 @@ def get_alerts():
                 alerts = []
 
     return jsonify({"alerts": alerts[-50:]}), 200
+
+@app.route('/update-thresholds', methods=['POST'])
+def update_thresholds():
+    try:
+        thresholds = request.json
+        if not thresholds:
+            return jsonify({"error": "No data received"}), 400
+
+        # Validate expected keys
+        expected_keys = {"cpu_temp_threshold", "cpu_usage_threshold", "ram_usage_threshold", "net_speed_threshold"}
+        if not expected_keys.issubset(thresholds.keys()):
+            return jsonify({"error": "Missing keys in request"}), 400
+
+        with open(THRESHOLD_FILE, 'w') as f:
+            json.dump(thresholds, f, indent=4)
+
+        return jsonify({"message": "Thresholds updated successfully!"}), 200
+
+    except Exception as e:
+        print("Error in update-thresholds:", e)
+        return jsonify({"error": "Internal server error"}), 500
+    
+@app.route('/get-thresholds', methods=['GET'])
+def get_thresholds():
+    try:
+        with open(THRESHOLD_FILE, 'r') as f:
+            thresholds = json.load(f)
+        return jsonify(thresholds), 200
+    except FileNotFoundError:
+        return jsonify({
+            "cpu_temp_threshold": 70,
+            "cpu_usage_threshold": 90,
+            "ram_usage_threshold": 90,
+            "net_speed_threshold": 90
+        }), 200  # Defaults if file not found
+    except Exception as e:
+        print("Error in get-thresholds:", e)
+        return jsonify({"error": "Internal server error"}), 500
 
 HISTORY_FILE = "history.json"
 previous_stress_running = False
@@ -424,8 +484,6 @@ def start_network_test():
         test_thread.start()
 
         return jsonify({"status": "started", "message": f"Testing {target_ip} for {duration} seconds."})
-
-
 
 @app.route('/stop_network_test', methods=['POST'])
 def stop_network_test():

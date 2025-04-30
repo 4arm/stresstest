@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonitorDash</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="/image/satellite-dish.png" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+</head>
+<body>
+
+    <!-- Navbar -->
+	<nav class="bottom-nav">
+    
+		<!-- MonitorDash (only for small screens) -->
+		<div class="monitor-dash-wrapper">
+			<button class="monitor-dash-btn" onclick="toggleDropdown()">
+				<h2>📡MonitorDash</h2>
+			</button>
+			<div class="dropdown-menu" id="dropdownMenu">
+				<a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
+				<a href="#"><i class="fas fa-desktop"></i> Devices</a>
+				<a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
+                <a href="history.html"><i class="fa-solid fa-folder-open"></i> History</a>
+				<a href="#"><i class="fas fa-cog"></i> Settings</a>
+			</div>
+		</div>
+	
+		<!-- Full nav links (only for wider screens) -->
+		<div class="nav-links">
+            <a href="index.html" class="nav-item"><h2>📡MonitorDash</h2></a>
+            <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i>Dashboard</a>
+            <a href="devices.html" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
+            <a href="alerts.html" class="nav-item active"><i class="fas fa-bell"></i>Alerts</a>
+            <a href="history.html" class="nav-item"><i class="fa-solid fa-folder-open"></i>History</a>
+            <a href="#" class="nav-item"><i class="fas fa-cog"></i>Settings</a>
+		</div>
+		
+	</nav>
+
+    <div class="container">
+        <div class="device-card">
+            <h1>Set Alert Thresholds</h1>
+            <form id="threshold-form">
+                <label for="cpu-temp">CPU Temperature Threshold (°C):</label>
+                <input type="number" id="cpu-temp" name="cpu_temp_threshold"><br><br>
+
+                <label for="cpu-usage">CPU Usage Threshold (%):</label>
+                <input type="number" id="cpu-usage" name="cpu_usage_threshold"><br><br>
+
+                <label for="ram-usage">RAM Usage Threshold (%):</label>
+                <input type="number" id="ram-usage" name="ram_usage_threshold"><br><br>
+
+                <label for="net-speed">Network Speed Threshold (Mbps):</label>
+                <input type="number" id="net-speed" name="net_speed_threshold"><br><br>
+
+                <button type="submit">Update Thresholds</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Load existing thresholds from server and populate form
+        fetch('http://172.18.18.20:5000/get-thresholds')
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Failed to load thresholds: " + data.error);
+                    return;
+                }
+                document.getElementById("cpu-temp").value = data.cpu_temp_threshold || 70;
+                document.getElementById("cpu-usage").value = data.cpu_usage_threshold || 90;
+                document.getElementById("ram-usage").value = data.ram_usage_threshold || 90;
+                document.getElementById("net-speed").value = data.net_speed_threshold || 90;
+            })
+            .catch(err => console.error("Fetch error:", err));
+    
+        // Submit updated thresholds
+        document.getElementById("threshold-form").addEventListener("submit", function(event) {
+            event.preventDefault();
+    
+            const thresholds = {
+                cpu_temp_threshold: parseInt(document.getElementById("cpu-temp").value),
+                cpu_usage_threshold: parseInt(document.getElementById("cpu-usage").value),
+                ram_usage_threshold: parseInt(document.getElementById("ram-usage").value),
+                net_speed_threshold: parseInt(document.getElementById("net-speed").value)
+            };
+    
+            fetch('http://172.18.18.20:5000/update-thresholds', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(thresholds)
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || data.error || "Unknown response");
+            })
+            .catch(err => alert("Request failed: " + err));
+        });
+    </script>
+    
+</body>
+</html>

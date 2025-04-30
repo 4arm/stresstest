@@ -26,7 +26,7 @@ const networkTest = {
  
 function updateGauge() {
  
- 	fetch(`http://172.18.18.20:5000/data`)
+ 	fetch(`http://${rpi_ip}:5000/data`)
  		.then(res => res.json())
  		.then(data => {
  			// Log the data for debugging
@@ -92,7 +92,7 @@ function stressTest() {
  
  	startCountdown(duration, rpi_ip, "notification", "stress-btn", "stop-btn");
  
- 	fetch(`http://172.18.18.20:5000/stress`, {
+ 	fetch(`http://${rpi_ip}:5000/stress`, {
  			method: "POST",
  			headers: { "Content-Type": "application/json" },
  			body: JSON.stringify({ duration })
@@ -110,7 +110,7 @@ function stopTest(ctx) {
  	const stressButton = document.getElementById(stressBtnId);
  	const stopButton = document.getElementById(stopBtnId);
  
- 	fetch(`http://172.18.18.20:5000/stop_stress`, { method: "POST" })
+ 	fetch(`http://${rpi_ip}:5000/stop_stress`, { method: "POST" })
  		.then(response => response.json())
  		.then(data => {
  			notification.innerText = "Stress test stopped!";
@@ -180,7 +180,7 @@ function fetchStressReport() {
 function fetchNetworkReport() {
  	const reportElement = document.getElementById("network-report");
  
- 	fetch(`http://172.18.18.20:5000/network_metrics`)
+ 	fetch(`http://${rpi_ip}:5000/network_metrics`)
  
  		.then(response => response.json())
  		.then(data => {
@@ -320,7 +320,7 @@ window.addEventListener("click", function(e) {
       if (remainingTime <= 0) clearInterval(countdownInterval);
     }, 1000);
 
-    fetch(`http://172.18.18.20:5000/start_network_test`, {
+    fetch(`http://${rpi_ip}:5000/start_network_test`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ target_ip: targetIp, duration: duration })
@@ -337,7 +337,7 @@ window.addEventListener("click", function(e) {
   }
 
   function stopTest() {
-    fetch(`http://172.18.18.20:5000//stop_network_test`, {
+    fetch(`http://${rpi_ip}:5000//stop_network_test`, {
       method: 'POST'
     })
     .then(res => res.json())
@@ -355,7 +355,7 @@ window.addEventListener("click", function(e) {
 function fetchNetworkReport() {
 	const reportElement = document.getElementById("network-report");
 
-	fetch(`http://172.18.18.20:5000/network_metrics`)
+	fetch(`http://${rpi_ip}:5000/network_metrics`)
 
 		.then(response => response.json())
 		.then(data => {

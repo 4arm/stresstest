@@ -1,0 +1,25 @@
+{
+  "name": "stresstest",
+  "version": "1.0.0",
+  "description": "Stress Test Environment\r A complete system to stress test CPU, RAM, storage, and network performance for Raspberry Pi and other client devices.\r Designed for reliability analysis, peak performance evaluation, and temperature monitoring.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/4arm/stresstest.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/4arm/stresstest/issues"
+  },
+  "homepage": "https://github.com/4arm/stresstest#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
