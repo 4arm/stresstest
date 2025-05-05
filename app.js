@@ -1,11 +1,18 @@
-const hostnameClass = document.getElementById('hostname');
-const ipClass = document.getElementById('ip');
+// Get IP and hostname from URL
+const urlParams = new URLSearchParams(window.location.search);
+const rpi_ip = urlParams.get('ip');
+const hostname = urlParams.get('hostname');
+
+// Set IP and hostname in DOM
+document.getElementById('ip').innerText = rpi_ip;
+document.getElementById('hostname').innerText = hostname;
+
  
 const temperatureGauge = document.getElementById('temperature');
 const cpuUsageGauge = document.getElementById('cpu_usage');
 const ramUsageGauge = document.getElementById('ram_usage');
 const networkSpeedGauge = document.getElementById('network_speed');
-const rpi_ip = ipClass.dataset.ip;
+
  
 const stressStatus = document.getElementById("stress-status");
 const networkStatus = document.getElementById("network-status");
@@ -67,13 +74,8 @@ function updateGauge() {
  			cpuUsageGauge.innerText = `CPU ${cpu_usage}%`;
  			ramUsageGauge.innerText = `RAM ${ram_used}MB`;
  			networkSpeedGauge.innerText = `Net Speed ${network_speed}Mbps`;
- 			hostnameClass.innerText = `${hostname}`;
- 			ipClass.innerText = rpi_ip;
 
  
- 			// if(temperature >= 60){
- 			// 	alert("Temperature is too high!" + temperature + "°C");
- 			// }
  		})
  		.catch(err => {
  		console.error("Failed to fetch data:", err);
@@ -126,7 +128,6 @@ function stopTest(ctx) {
  			notification.innerText = "Failed to stop stress test.";
  		});
 }
- 
  
 let countdownTimers = {};
  
@@ -278,8 +279,6 @@ function getStatusClass(value, warningThreshold, criticalThreshold) {
  
 setInterval(updateGauge, 2000);
  
-
- 
 function toggleDropdown() {
  	const dropdown = document.getElementById("dropdownMenu");
  	dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex";
@@ -293,7 +292,6 @@ window.addEventListener("click", function(e) {
  	  dropdown.style.display = "none";
  	}
 });
-
 
   let countdownInterval;
   let remainingTime = 0;
@@ -444,8 +442,6 @@ function fetchNetworkReport() {
 			reportElement.innerText = "Error fetching network test report.";
 		});
 }
-
-  
 
 function updateCountdown() {
 	const mins = String(Math.floor(remainingTime / 60)).padStart(2, '0');

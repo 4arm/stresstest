@@ -1,17 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-	<title>Device Monitor</title>
-	<link rel="stylesheet" href="style.css"/>
-</head>
-<body>
-	<h1>Device Monitor Dashboard</h1>
-	<div id="device-container" class="grid-container"></div>
-
-	<script>
-		// Fetch the device list from the JSON file
 fetch('deviceList.json')
   .then(response => response.json())
   .then(deviceList => {
@@ -27,13 +13,14 @@ fetch('deviceList.json')
         <p><strong>Status:</strong> <span class="status-${device.status}">${device.status}</span></p>
       `;
 
+      card.addEventListener('click', () => {
+        // Pass IP or unique identifier in the URL
+        window.location.href = `device.html?ip=${encodeURIComponent(device.ip)}`;
+      });
+
       container.appendChild(card);
     });
   })
   .catch(error => {
     console.error("Error loading device list:", error);
   });
-
-	</script>
-</body>
-</html>

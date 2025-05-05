@@ -207,6 +207,12 @@ def getresult():
 ALERT_FILE = "alert.json"
 THRESHOLD_FILE = "thresholds.json"
 
+# Replace this with actual device hostname or detection logic
+rpi1 = "RaspberryPi1"
+
+# Global net speed value (should be updated elsewhere in the app)
+net_speed = 0.0
+
 def append_to_alert_log(entry):
     if os.path.exists(ALERT_FILE):
         with open(ALERT_FILE, 'r') as f:
@@ -216,6 +222,7 @@ def append_to_alert_log(entry):
                 alerts = []
     else:
         alerts = []
+
     alerts.append(entry)
 
     with open(ALERT_FILE, 'w') as f:
@@ -235,70 +242,79 @@ def load_thresholds():
             "ram_usage_threshold": 90,
             "net_speed_threshold": 90
         }
-        # Create default thresholds file if not present
         with open(THRESHOLD_FILE, 'w') as f:
             json.dump(thresholds, f, indent=4)
     return thresholds
 
+def get_temperature():
+    try:
+        # Works on Raspberry Pi with VCGenCmd
+        temp_output = os.popen("vcgencmd measure_temp").readline()
+        temp = float(temp_output.replace("temp=", "").replace("'C\n", ""))
+        return temp
+    except:
+        return "Unavailable"
+
+def log_alert(device, alert_type, message):
+    entry = {
+        "time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "device": device,
+        "type": alert_type,
+        "message": message
+    }
+    append_to_alert_log(entry)
+
 @app.route('/alerts', methods=['GET'])
 def get_alerts():
+    global net_speed
+
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    alerts = []
     thresholds = load_thresholds()
 
-    # Temperature check
+    # CPU Temperature check
     cpu_temp = get_temperature()
     if cpu_temp != "Unavailable" and cpu_temp > thresholds["cpu_temp_threshold"]:
-        entry = {
-            "time": current_time,
-            "device": rpi1,
-            "type": "Temperature",
-            "message": f"High CPU temperature: {cpu_temp:.1f}°C"
-        }
-        append_to_alert_log(entry)
+        log_alert(rpi1, "Temperature", f"High CPU temperature: {cpu_temp:.1f}°C")
 
     # CPU Usage check
     cpu_usage = psutil.cpu_percent(interval=1)
     if cpu_usage > thresholds["cpu_usage_threshold"]:
-        entry = {
-            "time": current_time,
-            "device": rpi1,
-            "type": "Usage",
-            "message": f"High CPU usage: {cpu_usage:.1f}%"
-        }
-        append_to_alert_log(entry)
+        log_alert(rpi1, "Usage", f"High CPU usage: {cpu_usage:.1f}%")
 
     # RAM Usage check
     ram_usage = psutil.virtual_memory().percent
     if ram_usage > thresholds["ram_usage_threshold"]:
-        entry = {
-            "time": current_time,
-            "device": rpi1,
-            "type": "Usage",
-            "message": f"High RAM usage: {ram_usage:.1f}%"
-        }
-        append_to_alert_log(entry)
+        log_alert(rpi1, "Usage", f"High RAM usage: {ram_usage:.1f}%")
 
-    # Net Speed check 
-    global net_speed
+    # Net Speed check
     if net_speed > thresholds["net_speed_threshold"]:
-        entry = {
-            "time": current_time,
-            "device": rpi1,
-            "type": "Net Speed",
-            "message": f"High Network Speed: {net_speed:.1f} Mbps"
-        }
-        append_to_alert_log(entry)
+        log_alert(rpi1, "Net Speed", f"High Network Speed: {net_speed:.1f} Mbps")
 
-    # Read the latest alert history from the file
+    # Load and return the latest 50 alerts
     if os.path.exists(ALERT_FILE):
         with open(ALERT_FILE, 'r') as f:
             try:
                 alerts = json.load(f)
             except json.JSONDecodeError:
                 alerts = []
+    else:
+        alerts = []
 
-    return jsonify({"alerts": alerts[-50:]}), 200
+    return jsonify({"status": "ok", "alerts": alerts[-50:]}), 200
+
+@app.route('/thresholds', methods=['GET', 'POST'])
+def manage_thresholds():
+    if request.method == 'GET':
+        thresholds = load_thresholds()
+        return jsonify({"thresholds": thresholds}), 200
+    elif request.method == 'POST':
+        try:
+            new_thresholds = request.json
+            with open(THRESHOLD_FILE, 'w') as f:
+                json.dump(new_thresholds, f, indent=4)
+            return jsonify({"status": "updated", "thresholds": new_thresholds}), 200
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)}), 400
 
 @app.route('/update-thresholds', methods=['POST'])
 def update_thresholds():
@@ -320,7 +336,7 @@ def update_thresholds():
     except Exception as e:
         print("Error in update-thresholds:", e)
         return jsonify({"error": "Internal server error"}), 500
-    
+
 @app.route('/get-thresholds', methods=['GET'])
 def get_thresholds():
     try:
@@ -467,11 +483,11 @@ def start_network_test():
                 command = ["iperf3", "-c", target_ip, "-t", str(duration), "-J"]
                 result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
                 test_result = json.loads(result.stdout)
-                
+
                 # Save the result to the RESULT_FILE
                 with open(RESULT_FILE, "w") as result_file:
                     json.dump(test_result, result_file, indent=4)
-                    
+
             except subprocess.CalledProcessError as e:
                 test_result = {"error": e.stderr}
             finally:

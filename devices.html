@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MonitorDash</title>
+  <meta charset="UTF-8">
+  <title>MonitorDash</title>
     <link rel="icon" href="/image/satellite-dish.png" type="image/png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="style.css">
@@ -37,62 +36,89 @@
 		</div>
 		
 	</nav>
+	
+	<div class="container">
+		<div class="device-card">
+			<h1>Device Dashboard</h1>
+	
+			<form id="deviceForm">
+				<input type="text" id="ip" placeholder="Device IP" required>
+				<input type="text" id="name" placeholder="Device Name" required>
+				<input type="text" id="location" placeholder="Location" required>
+				<button class="btn" type="submit">Add / Update Device</button>
+			</form>
+		</div>
 
-    <div class="container">
+		<span id="deviceList"></span>
+	</div>
 
-        <a href="deviceForm.html">
-            <button class="btn">Add / Delete Device</button>
-        </a>
-        <div class="device-card">
-            <h2>Raspberry Pi 1</h2>
-            <p>Status: <span class="status good">Online</span></p>
-            <a href="rpi1.html">
-                <button class="btn">Monitor</button>
-            </a>
-            <div class="card-footer">IP: <span id="ip" data-ip="172.18.18.20">172.18.18.20</span></div>
-        </div>
+	
 
-        <div class="device-card">
-            <h2>Raspberry Pi 2</h2>
-            <p>Status: <span class="status good">Online</span></p>
-            <a href="rpi2.html">
-                <button class="btn">Monitor</button>
-            </a>
-            <div class="card-footer">IP: 172.18.18.50</div>
-        </div>
+	<script>
+		async function loadDevices() {
+		const res = await fetch('/devices');
+		const devices = await res.json();
+		const list = document.getElementById('deviceList');
+		list.innerHTML = '';
+		devices.forEach((d, index) => {
+			const item = document.createElement('div');
+			item.innerHTML = 
+			`
+				<div class="device-card">
+					<h2>${d.name}</h2>
+					<h3>Location: ${d.location}</h3>
+					<div class="card-footer">IP: ${d.ip}</div>
+					<button class="btn" onclick="monitorDevice('${d.ip}', '${d.name}')">Monitor</button>
+					<button class="btn" onclick="editDevice(${index})">Edit</button>
+					<button class="btn" onclick="deleteDevice(${index})">Delete</button>
+				</div>
+			`;
+			list.appendChild(item);
+		});
+		}
 
-        <div class="device-card">
-            <h2>Raspberry Pi 3</h2>
-            <p>Status: <span class="status good">Online</span></p>
-            <a href="rpi3.html">
-                <button class="btn">Monitor</button>
-            </a>
-            <div class="card-footer">IP: 192.168.120.49</div>
-        </div>
+		document.getElementById('deviceForm').addEventListener('submit', async (e) => {
+		e.preventDefault();
+		const ip = document.getElementById('ip').value;
+		const name = document.getElementById('name').value;
+		const location = document.getElementById('location').value;
 
-        <div class="device-card">
-            <h2>Host PC</h2>
-            <p>Status: <span class="status critical">Offline</span></p>
-            <button class="btn">Monitor</button>
-            <div class="card-footer">IP: 172.18.18.2</div>
-        </div>
-    </div>
+		await fetch('/addOrUpdate', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ ip, name, location })
+		});
 
-    <div class="network-report">
-        <p>Last updated: <span id="last-updated"></span></p>
-        <p id="notification">No new notifications.</p>
-        
-    <script>
-        // Update the last updated time
-        const lastUpdated = new Date().toLocaleString();
-        document.getElementById('last-updated').textContent = lastUpdated;
-    </script>
+		e.target.reset();
+		loadDevices();
+		});
 
-    </div>
+		function editDevice(index) {
+		fetch('/devices')
+			.then(res => res.json())
+			.then(data => {
+			const device = data[index];
+			document.getElementById('ip').value = device.ip;
+			document.getElementById('name').value = device.name;
+			document.getElementById('location').value = device.location;
+			});
+		}
 
-    <script src="app.js"></script>
-    <footer class="footer">
-        <p>&copy; 2025 EASEHAM. All rights reserved.</p>
-    </footer>
+		function deleteDevice(index) {
+		fetch('/delete', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ index })
+		}).then(() => loadDevices());
+		}
+
+		function monitorDevice(ip, hostname){
+			window.location.href = `device.html?ip=${encodeURIComponent(ip)}&hostname=${encodeURIComponent(hostname)}`;
+		}
+
+		loadDevices();
+
+	</script>
+
 </body>
 </html>

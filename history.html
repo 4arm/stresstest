@@ -1,93 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>MonitorDash</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="icon" href="/image/satellite-dish.png" type="image/x-icon">  
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="icon" href="/image/satellite-dish.png" type="image/x-icon" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Navbar -->
-	<nav class="bottom-nav">
-    
-		<!-- MonitorDash (only for small screens) -->
-		<div class="monitor-dash-wrapper">
-			<button class="monitor-dash-btn" onclick="toggleDropdown()">
-				<h2>📡MonitorDash</h2>
-			</button>
-			<div class="dropdown-menu" id="dropdownMenu">
-				<a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
-				<a href="devices.html"><i class="fas fa-desktop"></i> Devices</a>
-				<a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
-                <a href="history.html"><i class="fa-solid fa-folder-open"></i> History</a>
-				<a href="#"><i class="fas fa-cog"></i> Settings</a>
-			</div>
-		</div>
-	
-		<!-- Full nav links (only for wider screens) -->
-		<div class="nav-links">
-            <a href="index.html" class="nav-item"><h2>📡MonitorDash</h2></a>
-            <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i>Dashboard</a>
-            <a href="devices.html" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
-            <a href="alerts.html" class="nav-item"><i class="fas fa-bell"></i>Alerts</a>
-            <a href="history.html" class="nav-item active"><i class="fa-solid fa-folder-open"></i>History</a>
-            <a href="#" class="nav-item"><i class="fas fa-cog"></i>Settings</a>
-		</div>
-		
-	</nav>
+  <!-- Navbar -->
+  <nav class="bottom-nav">
+    <div class="monitor-dash-wrapper">
+      <button class="monitor-dash-btn" onclick="toggleDropdown()">
+        <h2>📡MonitorDash</h2>
+      </button>
+      <div class="dropdown-menu" id="dropdownMenu">
+        <a href="index.html"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="devices.html"><i class="fas fa-desktop"></i> Devices</a>
+        <a href="alerts.html"><i class="fas fa-bell"></i> Alerts</a>
+        <a href="history.html"><i class="fa-solid fa-folder-open"></i> History</a>
+        <a href="#"><i class="fas fa-cog"></i> Settings</a>
+      </div>
+    </div>
 
-	<div class="container device-card">
-		<h1 class="center">Test History Log</h1>
-		<div class="scrollable">
-			<table id="logTable">
-				<thead>
-				<tr>
-					<th>Time</th>
-					<th>Device</th>
-					<th>Type</th>
-					<th>Message</th>
-				</tr>
-				</thead>
-				<tbody></tbody>
-			</table>
-		</div>
-		
-	</div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-item"><h2>📡MonitorDash</h2></a>
+      <a href="index.html" class="nav-item"><i class="fas fa-chart-line"></i>Dashboard</a>
+      <a href="devices.html" class="nav-item"><i class="fas fa-desktop"></i>Devices</a>
+      <a href="alerts.html" class="nav-item"><i class="fas fa-bell"></i>Alerts</a>
+      <a href="history.html" class="nav-item active"><i class="fa-solid fa-folder-open"></i>History</a>
+      <a href="#" class="nav-item"><i class="fas fa-cog"></i>Settings</a>
+    </div>
+  </nav>
 
+  <!-- Filter and Table -->
+  <div class="container device-card">
+    <h1 class="center">Test History Log</h1>
+
+    <div class="center filters">
+      <label for="deviceFilter">Filter by device:</label>
+      <select id="deviceFilter">
+        <option value="all">All Devices</option>
+      </select>
+    </div>
+
+    <div class="scrollable">
+      <table id="logTable">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Device</th>
+            <th>Type</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
 
   <script>
-    const apiUrl = 'http://172.18.18.20:5000/history'; // Update if needed
+    let deviceList = [];
+    let lastHistoryTimestamp = null;
 
-    async function fetchHistory() {
+    async function loadDevices() {
       try {
-        const res = await fetch(apiUrl);
-        const data = await res.json();
+        const res = await fetch('deviceList.json');
+        deviceList = await res.json();
 
-        const tbody = document.querySelector('#logTable tbody');
-        tbody.innerHTML = ''; // Clear old rows
-
-        data.histories.reverse().forEach(entry => {
-          const row = document.createElement('tr');
-
-          row.innerHTML = `
-            <td>${entry.time}</td>
-            <td>${entry.device}</td>
-            <td class="${entry.type.includes('CPU') ? 'CPU' : 'Network'}">${entry.type}</td>
-            <td>${entry.message}</td>
-          `;
-
-          tbody.appendChild(row);
+        const filter = document.getElementById('deviceFilter');
+        deviceList.forEach(device => {
+          const option = document.createElement('option');
+          option.value = device.ip;
+          option.textContent = `${device.name} (${device.location})`;
+          filter.appendChild(option);
         });
 
-      } catch (error) {
-        console.error("Error fetching history:", error);
+        filter.addEventListener('change', fetchHistoryIfChanged);
+      } catch (err) {
+        console.error("Error loading device list:", err);
       }
     }
 
-    setInterval(fetchHistory, 1000); // Poll every second
-    fetchHistory(); // Initial load
+    async function fetchHistoryIfChanged() {
+      const selectedIP = document.getElementById('deviceFilter').value;
+      let newHistories = [];
+
+      if (selectedIP === 'all') {
+        for (const device of deviceList) {
+          try {
+            const res = await fetch(`http://${device.ip}:5000/history`);
+            const data = await res.json();
+            const entries = data.histories.map(entry => ({
+              ...entry,
+              device: device.name || device.ip
+            }));
+            newHistories = newHistories.concat(entries);
+          } catch (e) {
+            console.warn(`Failed to fetch from ${device.ip}`);
+          }
+        }
+      } else {
+        try {
+          const res = await fetch(`http://${selectedIP}:5000/history`);
+          const data = await res.json();
+          const device = deviceList.find(d => d.ip === selectedIP);
+          const name = device ? device.name : selectedIP;
+          newHistories = data.histories.map(entry => ({
+            ...entry,
+            device: name
+          }));
+        } catch (e) {
+          console.error(`Fetch failed from ${selectedIP}:`, e);
+        }
+      }
+
+      // Sort and check for changes
+      newHistories.sort((a, b) => new Date(b.time) - new Date(a.time));
+      const latestTime = newHistories[0]?.time;
+
+      if (!lastHistoryTimestamp || latestTime !== lastHistoryTimestamp) {
+        lastHistoryTimestamp = latestTime;
+        updateLogTable(newHistories);
+      }
+    }
+
+    function updateLogTable(histories) {
+      const tbody = document.querySelector('#logTable tbody');
+      tbody.innerHTML = '';
+      histories.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${entry.time}</td>
+          <td>${entry.device}</td>
+          <td class="${entry.type.includes('CPU') ? 'CPU' : 'Network'}">${entry.type}</td>
+          <td>${entry.message}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Initialize
+    loadDevices().then(() => {
+      fetchHistoryIfChanged();
+      setInterval(fetchHistoryIfChanged, 5000);
+    });
+
+    function toggleDropdown() {
+      const dropdown = document.getElementById('dropdownMenu');
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    }
   </script>
 </body>
 </html>

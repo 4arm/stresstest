@@ -87,6 +87,27 @@
   
 
   <script>
+
+    async function loadDeviceList() {
+        try {
+            const response = await fetch('deviceList.json');
+            const devices = await response.json();
+
+            const deviceFilter = document.getElementById('deviceFilter');
+            deviceFilter.innerHTML = '<option value="All">All</option>';
+
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.ip;
+                option.textContent = `${device.name} (${device.ip})`;
+                deviceFilter.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Failed to load device list:', error);
+        }
+    }
+
+
     function filterAlerts(type) {
       const rows = document.querySelectorAll("#alertsTable tbody tr");
       rows.forEach(row => {
@@ -98,14 +119,33 @@
 
     async function fetchAlerts() {
         try {
-            const response = await fetch('http://172.18.18.20:5000/alerts');
-            const data = await response.json();
-            allAlerts = data.alerts;
-            applyFilters(); // update table with filters applied
+            const deviceListRes = await fetch('deviceList.json');
+            const deviceList = await deviceListRes.json();
+
+            const alertPromises = deviceList.map(async device => {
+                try {
+                    const response = await fetch(`http://${device.ip}:5000/alerts`);
+                    const data = await response.json();
+                    return data.alerts.map(alert => ({
+                        ...alert,
+                        device: device.ip,  // Ensure device IP is set
+                        name: device.name   // Optionally add name
+                    }));
+                } catch (err) {
+                    console.warn(`Failed to fetch from ${device.ip}`, err);
+                    return [];
+                }
+            });
+
+            const allAlertsNested = await Promise.all(alertPromises);
+            allAlerts = allAlertsNested.flat(); // Flatten nested arrays
+
+            applyFilters();
         } catch (error) {
-            console.error('Failed to fetch alerts:', error);
+            console.error('Error fetching alerts from devices:', error);
         }
     }
+
 
     function applyFilters() {
         const deviceFilter = document.getElementById('deviceFilter').value;
@@ -127,7 +167,7 @@
         if (alerts.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4">No matching alerts.</td></tr>';
         } else {
-            alerts.forEach(alert => {
+            alerts.reverse().forEach(alert => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${alert.time}</td>
@@ -142,12 +182,14 @@
 
     // Listen for filter changes
     document.addEventListener('DOMContentLoaded', () => {
-        fetchAlerts();
+        loadDeviceList();        // Load dropdown options
+        fetchAlerts();           // Fetch all alerts
         setInterval(fetchAlerts, 1000);
 
         document.getElementById('deviceFilter').addEventListener('change', applyFilters);
         document.getElementById('typeFilter').addEventListener('change', applyFilters);
     });
+
 
   </script>
 
