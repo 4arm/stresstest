@@ -12,24 +12,13 @@ const temperatureGauge = document.getElementById('temperature');
 const cpuUsageGauge = document.getElementById('cpu_usage');
 const ramUsageGauge = document.getElementById('ram_usage');
 const networkSpeedGauge = document.getElementById('network_speed');
+const readSpeedGauge = document.getElementById('read_speed');
+const writeSpeedGauge = document.getElementById('write_speed');
 
  
 const stressStatus = document.getElementById("stress-status");
 const networkStatus = document.getElementById("network-status");
  
-const CPUtest = {
- 	rpi_ip: rpi_ip,
- 	notificationId: "notification",
- 	stressBtnId: "stress-btn",
- 	stopBtnId: "stop-btn"
-};
- 
-const networkTest = {
- 	rpi_ip: rpi_ip,
- 	notificationId: "networkNotification",
- 	stressBtnId: "network-btn",
- 	stopBtnId: "stop-network-btn"
-};
  
 function updateGauge() {
  
@@ -41,7 +30,8 @@ function updateGauge() {
  			const cpu_usage = data.cpu_usage;     // Make sure this matches your API
  			const ram_used = data.ram_used;     // Make sure this matches your API
  			const network_speed = data.network_speed; // Make sure this matches your API
- 			const hostname = data.hostname; // Make sure this matches your API
+			const read_speed = data.read_speed; // Make sure this matches your API		
+			const write_speed = data.write_speed; // Make sure this matches your API
  
  			console.log("ip: ", rpi_ip);
  
@@ -55,6 +45,8 @@ function updateGauge() {
  			const maxCPU = 100;
  			const maxRAM = 4000;
  			const maxNetworkSpeed = 1000; // Example max speed in Mbps
+			const maxReadSpeed = 100000; // Example max read speed in MB/s
+			const maxWriteSpeed = 100000; // Example max write speed in MB/s
  
   
  			// Calculate angles
@@ -62,18 +54,30 @@ function updateGauge() {
  			const cpuAngle = Math.min(180, (cpu_usage / maxCPU) * 180);
  			const ramAngle = Math.min(180, (ram_used / maxRAM) * 180);
  			const networkAngle = Math.min(180, (network_speed / maxNetworkSpeed) * 180);
+			const readAngle = Math.min(180, (read_speed / maxReadSpeed) * 180);
+			const writeAngle = Math.min(180, (write_speed / maxWriteSpeed) * 180);
  
  			// Update gauge rotations
  			document.getElementById('temp-gauge').style.transform = `rotate(${tempAngle}deg)`;
  			document.getElementById('cpu-gauge').style.transform = `rotate(${cpuAngle}deg)`;
  			document.getElementById('ram-gauge').style.transform = `rotate(${ramAngle}deg)`;
  			document.getElementById('network-gauge').style.transform = `rotate(${networkAngle}deg)`;
+			document.getElementById('read-speed-gauge').style.transform = `rotate(${readAngle}deg)`;
+			document.getElementById('write-speed-gauge').style.transform = `rotate(${writeAngle}deg)`;
  
  			// Update text
  			temperatureGauge.innerText = `Temp ${temperature}°C`;
  			cpuUsageGauge.innerText = `CPU ${cpu_usage}%`;
  			ramUsageGauge.innerText = `RAM ${ram_used}MB`;
  			networkSpeedGauge.innerText = `Net Speed ${network_speed}Mbps`;
+			readSpeedGauge.innerText = `Read Speed ${read_speed}MB/s`;
+			writeSpeedGauge.innerText = `Write Speed ${write_speed}MB/s`;
+ 
+ 			// Update status classes
+ 			// temperatureGauge.className = getStatusClass(temperature, 70, 90);
+ 			// cpuUsageGauge.className = getStatusClass(cpu_usage, 70, 90);
+ 			// ramUsageGauge.className = getStatusClass(ram_used, 3000, 3500);
+ 			// networkSpeedGauge.className = getStatusClass(network_speed, 800, 900);
 
  
  		})
@@ -293,10 +297,10 @@ window.addEventListener("click", function(e) {
  	}
 });
 
-  let countdownInterval;
-  let remainingTime = 0;
+let countdownInterval;
+let remainingTime = 0;
 
-  function runNetworkTest() {
+function runNetworkTest() {
     const duration = parseInt(document.getElementById('network-duration').value) || 20;
     const targetIp = document.getElementById('target-ip').value || '172.18.18.50';
 
@@ -334,8 +338,8 @@ window.addEventListener("click", function(e) {
     });
   }
 
-  function stopTest() {
-    fetch(`http://${rpi_ip}:5000//stop_network_test`, {
+  function stopNetworkTest() {
+    fetch(`http://${rpi_ip}:5000/stop_network_test`, {
       method: 'POST'
     })
     .then(res => res.json())
@@ -449,4 +453,141 @@ function updateCountdown() {
 	document.getElementById('countdown-timer').textContent = `${mins}:${secs}`;
 }
 
+async function fetchDevices() {
+	try {
+		const res = await fetch('deviceList.json');
+		const devices = await res.json();
+		const devicesDiv = document.getElementById("devices");
+		devicesDiv.innerHTML = '';
 
+		// Loop through the device list and create the device cards
+		devices.forEach(device => {
+			if (device.ip === rpi_ip) { // Only show the device matching the IP from the URL
+				devicesDiv.appendChild(createDeviceCard(device));
+			}
+		});
+
+	} catch (err) {
+		document.getElementById("devices").innerHTML = "❌ Failed to load devices: " + err;
+	}
+}
+
+// Create a card for each device
+function createDeviceCard(device) {
+	const div = document.createElement("div");
+	div.className = "device";
+	div.innerHTML = `
+		<h3>${device.name} (${device.ip})</h3>
+		<p><strong>Location:</strong> ${device.location}</p>
+		<input type="number" id="size-${device.ip}" placeholder="Enter RAM size in MB" min="1" style="width:150px;">
+		<button class="btn" onclick="runRamTest('${device.ip}')">Run RAM Test</button>
+		<div class="result network-report" id="ramResult-${device.ip}">Waiting...</div>
+	`;
+	return div;
+}
+
+// Run RAM test for the selected device
+async function runRamTest(ip) {
+	const sizeInput = document.getElementById(`size-${ip}`);
+	const sizeMB = parseInt(sizeInput.value);
+	const resultDiv = document.getElementById(`ramResult-${ip}`);
+
+	if (isNaN(sizeMB) || sizeMB <= 0) {
+		resultDiv.innerHTML = "⚠️ Please enter a valid RAM size in MB.";
+		return;
+	}
+
+	resultDiv.innerHTML = `Testing ${sizeMB} MB...`;
+
+	try {
+		// Fetch RAM test result from the backend
+		const res = await fetch(`http://${ip}:5000/test_ram?size=${sizeMB}`);
+		const data = await res.json();
+
+		if (data.status === 'success') {
+			resultDiv.innerHTML = `
+				<strong>Requested:</strong> ${data.requested_mb} MB<br>
+				<strong>Used:</strong> ${(data.used / 1e6).toFixed(2)} MB<br>
+				<strong>Total:</strong> ${(data.total / 1e6).toFixed(2)} MB<br>
+				<strong>Usage:</strong> ${data.percent}%<br>
+				<strong>Alloc Speed:</strong> ${data.alloc_speed_sec}s<br>
+				<strong>Message:</strong> ${data.message}
+			`;
+		} else {
+			resultDiv.innerHTML = "⚠️ " + data.message;
+		}
+	} catch (err) {
+		resultDiv.innerHTML = "❌ Request failed: " + err;
+	}
+}
+
+// Call the fetchDevices function to load the specific device
+fetchDevices();
+
+async function fetchDevicess() {
+	try {
+		const res = await fetch('deviceList.json');
+		const devices = await res.json();
+		const devicesDiv = document.getElementById("diskDevices"); // Updated ID here
+		devicesDiv.innerHTML = '';
+
+		// Loop through the device list and create the device cards
+		devices.forEach(device => {
+			if (device.ip === rpi_ip) { // Only show the device matching the IP from the URL
+				devicesDiv.appendChild(createDeviceCards(device));
+			}
+		});
+
+	} catch (err) {
+		document.getElementById("diskDevices").innerHTML = "❌ Failed to load devices: " + err; // Updated ID here
+	}
+}
+
+// Create a card for each device
+function createDeviceCards(device) {
+	const div = document.createElement("div");
+	div.className = "device";
+	div.innerHTML = `
+		<h3>${device.name} (${device.ip})</h3>
+		<p><strong>Location:</strong> ${device.location}</p>
+		<input type="number" id="disk-size-${device.ip}" placeholder="Enter disk size in MB" min="1" style="width:150px;">
+		<button class="btn" onclick="runDiskTest('${device.ip}')">Run Disk Test</button>
+		<div class="result network-report" id="diskResult-${device.ip}">Waiting...</div>
+	`;
+	return div;
+}
+
+// Run disk test for the selected device
+async function runDiskTest(ip) {
+	const sizeInput = document.getElementById(`disk-size-${ip}`);
+	const sizeMB = parseInt(sizeInput.value);
+	const resultDiv = document.getElementById(`diskResult-${ip}`);
+
+	if (isNaN(sizeMB) || sizeMB <= 0) {
+		resultDiv.innerHTML = "⚠️ Please enter a valid disk size in MB.";
+		return;
+	}
+
+	resultDiv.innerHTML = `Testing disk speed for ${sizeMB} MB...`;
+
+	try {
+		// Fetch disk test result from the backend
+		const res = await fetch(`http://${ip}:5000/test_disk?size=${sizeMB}`);
+		const data = await res.json();
+
+		if (data.status === 'success') {
+			resultDiv.innerHTML = `
+				<strong>Write Speed:</strong> ${data.write_speed.toFixed(2)} MB/s<br>
+				<strong>Read Speed:</strong> ${data.read_speed.toFixed(2)} MB/s<br>
+				<strong>Message:</strong> ${data.message}
+			`;
+		} else {
+			resultDiv.innerHTML = "⚠️ " + data.message;
+		}
+	} catch (err) {
+		resultDiv.innerHTML = "❌ Request failed: " + err;
+	}
+}
+
+// Call the fetchDevices function to load the specific device
+fetchDevicess();

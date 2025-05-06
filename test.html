@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RAM Tester</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .device { border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 8px; }
+        .result { margin-top: 10px; font-size: 14px; color: #333; }
+        input, button { padding: 5px; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Device RAM Tester</h2>
+    <div id="devices">Loading devices...</div>
+
+    <script>
+        async function fetchDevices() {
+            try {
+                const res = await fetch('deviceList.json');
+                const devices = await res.json();
+                const devicesDiv = document.getElementById("devices");
+                devicesDiv.innerHTML = '';
+
+                devices.forEach(device => {
+                    devicesDiv.appendChild(createDeviceCard(device));
+                });
+            } catch (err) {
+                document.getElementById("devices").innerHTML = "❌ Failed to load devices: " + err;
+            }
+        }
+
+        function createDeviceCard(device) {
+            const div = document.createElement("div");
+            div.className = "device";
+            div.innerHTML = `
+                <h3>${device.name} (${device.ip})</h3>
+                <p><strong>Location:</strong> ${device.location}</p>
+                <input type="number" id="size-${device.ip}" placeholder="Enter RAM size in MB" min="1" style="width:150px;">
+                <button onclick="runRamTest('${device.ip}')">Run RAM Test</button>
+                <div class="result" id="ramResult-${device.ip}">Waiting...</div>
+            `;
+            return div;
+        }
+
+        async function runRamTest(ip) {
+            const sizeInput = document.getElementById(`size-${ip}`);
+            const sizeMB = parseInt(sizeInput.value);
+            const resultDiv = document.getElementById(`ramResult-${ip}`);
+
+            if (isNaN(sizeMB) || sizeMB <= 0) {
+                resultDiv.innerHTML = "⚠️ Please enter a valid RAM size in MB.";
+                return;
+            }
+
+            resultDiv.innerHTML = `Testing ${sizeMB} MB...`;
+
+            try {
+                const res = await fetch(`http://${ip}:5000/test_ram?size=${sizeMB}`);
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    resultDiv.innerHTML = `
+                        <strong>Requested:</strong> ${data.requested_mb} MB<br>
+                        <strong>Used:</strong> ${(data.used / 1e6).toFixed(2)} MB<br>
+                        <strong>Total:</strong> ${(data.total / 1e6).toFixed(2)} MB<br>
+                        <strong>Usage:</strong> ${data.percent}%<br>
+                        <strong>Alloc Speed:</strong> ${data.alloc_speed_sec}s<br>
+                        <strong>Message:</strong> ${data.message}
+                    `;
+                } else {
+                    resultDiv.innerHTML = "⚠️ " + data.message;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = "❌ Request failed: " + err;
+            }
+        }
+
+        fetchDevices();
+    </script>
+</body>
+</html>

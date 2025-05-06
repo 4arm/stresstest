@@ -1,12 +1,17 @@
 [
   {
     "ip": "172.18.18.20",
-    "name": "Muhd Izham",
+    "name": "RPI1",
     "location": "Office"
   },
   {
     "ip": "172.18.18.50",
-    "name": "Rpi1",
+    "name": "RPI2",
     "location": "Garden"
+  },
+  {
+    "ip": "192.168.0.20",
+    "name": "RPI3",
+    "location": "Meeting Room"
   }
 ]

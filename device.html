@@ -82,7 +82,29 @@
                     </div>
                     <div id="network_speed">Loading</div>
                 </div>
+
+                <!-- Gauge for Disk Read Speed -->
+                <div class="gauge">
+                    <div class="mask">
+                      <div class="semi-circle"></div>
+                      <div class="semi-circle--mask" id="read-speed-gauge"></div>
+                    </div>
+                    <div id="read_speed">Loading</div>
+                </div>
+
+                <!-- Gauge for Disk Write Speed -->
+                <div class="gauge">
+                    <div class="mask">
+                      <div class="semi-circle"></div>
+                      <div class="semi-circle--mask" id="write-speed-gauge"></div>
+                    </div>
+                    <div id="write_speed">Loading</div>
+                </div>
+
 			</div>
+
+
+
 			<div>
 				<!-- CPU Test Card -->
                 <div class="device-card">
@@ -103,13 +125,25 @@
 					<input type="number" id="network-duration" placeholder="20" min="5" max="60"> sec
 					<input type="text" id="target-ip" placeholder="172.18.18.50">
 					<button class="btn" id="network-btn" onclick="runNetworkTest()">Run Network Test</button>
-					<button class="btn" id="stop-network-btn" onclick="stopTest()" disabled>Stop Test</button>
+					<button class="btn" id="stop-network-btn" onclick="stopNetworkTest()" disabled>Stop Test</button>
 					<button class="btn" onclick="fetchNetworkReport()">Network Test Report</button>
 					<p id="networkNotification"></p>
 					<p>Countdown: <span id="countdown-timer">00:00</span></p>
 					<div id="network-report" class="network-report"></div>
 				</div>
-            </div>
+
+                
+                <!-- RAM Test Card -->
+                <div class="device-card">
+                    <h2>RAM Test</h2>
+                    <div id="devices">Loading devices...</div>
+                </div>
+
+                <!-- Disk Tester -->
+                 <div class="device-card">
+                    <h2>Disk Test</h2>
+                    <div id="diskDevices">Loading devices...</div>
+                 </div>
         </div>
     </div>
     

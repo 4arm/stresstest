@@ -43,6 +43,10 @@
     <div class="container">
         <div class="device-card">
             <h1>Set Alert Thresholds</h1>
+
+            <label for="device-select">Select Device:</label>
+            <select class="btn" id="device-select"></select><br><br>
+
             <form id="threshold-form">
                 <label for="cpu-temp">CPU Temperature Threshold (°C):</label>
                 <input type="number" id="cpu-temp" name="cpu_temp_threshold"><br><br>
@@ -61,25 +65,61 @@
         </div>
     </div>
 
+
+
     <script>
-        // Load existing thresholds from server and populate form
-        fetch('http://172.18.18.20:5000/get-thresholds')
+        let selectedDeviceIP = null;
+    
+        // Load devices into dropdown
+        fetch('deviceList.json')
             .then(res => res.json())
-            .then(data => {
-                if (data.error) {
-                    alert("Failed to load thresholds: " + data.error);
-                    return;
-                }
-                document.getElementById("cpu-temp").value = data.cpu_temp_threshold || 70;
-                document.getElementById("cpu-usage").value = data.cpu_usage_threshold || 90;
-                document.getElementById("ram-usage").value = data.ram_usage_threshold || 90;
-                document.getElementById("net-speed").value = data.net_speed_threshold || 90;
+            .then(devices => {
+                const dropdown = document.getElementById("device-select");
+    
+                devices.forEach(device => {
+                    const option = document.createElement("option");
+                    option.value = device.ip;
+                    option.textContent = `${device.name} (${device.location})`;
+                    dropdown.appendChild(option);
+                });
+    
+                // Set initial selected device
+                selectedDeviceIP = devices[0].ip;
+                loadThresholds(selectedDeviceIP);
             })
-            .catch(err => console.error("Fetch error:", err));
+            .catch(err => console.error("Failed to load device list:", err));
+    
+        // Handle device change
+        document.getElementById("device-select").addEventListener("change", function() {
+            selectedDeviceIP = this.value;
+            loadThresholds(selectedDeviceIP);
+        });
+    
+        // Load thresholds from selected device
+        function loadThresholds(ip) {
+            fetch(`http://${ip}:5000/get-thresholds`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("Failed to load thresholds: " + data.error);
+                        return;
+                    }
+                    document.getElementById("cpu-temp").value = data.cpu_temp_threshold || 70;
+                    document.getElementById("cpu-usage").value = data.cpu_usage_threshold || 90;
+                    document.getElementById("ram-usage").value = data.ram_usage_threshold || 90;
+                    document.getElementById("net-speed").value = data.net_speed_threshold || 90;
+                })
+                .catch(err => console.error("Fetch error:", err));
+        }
     
         // Submit updated thresholds
         document.getElementById("threshold-form").addEventListener("submit", function(event) {
             event.preventDefault();
+    
+            if (!selectedDeviceIP) {
+                alert("No device selected.");
+                return;
+            }
     
             const thresholds = {
                 cpu_temp_threshold: parseInt(document.getElementById("cpu-temp").value),
@@ -88,7 +128,7 @@
                 net_speed_threshold: parseInt(document.getElementById("net-speed").value)
             };
     
-            fetch('http://172.18.18.20:5000/update-thresholds', {
+            fetch(`http://${selectedDeviceIP}:5000/update-thresholds`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -102,6 +142,7 @@
             .catch(err => alert("Request failed: " + err));
         });
     </script>
+    
     
 </body>
 </html>
