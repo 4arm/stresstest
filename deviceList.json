@@ -3,5 +3,10 @@
     "ip": "192.168.1.101",
     "name": "Xaipes",
     "location": "Office"
+  },
+  {
+    "ip": "172.16.20.137",
+    "name": "Monitor Tool",
+    "location": "Table"
   }
 ]

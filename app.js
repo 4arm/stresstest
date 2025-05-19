@@ -591,3 +591,5 @@ async function runDiskTest(ip) {
 
 // Call the fetchDevices function to load the specific device
 fetchDevicess();
+
+
