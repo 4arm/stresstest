@@ -1,17 +1,7 @@
 [
   {
-    "ip": "172.18.18.20",
-    "name": "RPI1",
+    "ip": "192.168.1.101",
+    "name": "Xaipes",
     "location": "Office"
-  },
-  {
-    "ip": "172.18.18.50",
-    "name": "RPI2",
-    "location": "Garden"
-  },
-  {
-    "ip": "192.168.0.20",
-    "name": "RPI3",
-    "location": "Meeting Room"
   }
 ]
