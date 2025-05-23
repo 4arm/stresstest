@@ -1,9 +1,10 @@
 import os
 import signal
 import subprocess
-from flask import Flask, jsonify
+from flask import Flask, send_file, jsonify, request
 import json
 from flask_cors import CORS
+import pandas as pd
 
 app = Flask(__name__)
 CORS(app)
@@ -42,6 +43,31 @@ def stop_test():
         except Exception as e:
             return jsonify({'status': 'error', 'message': str(e)}), 500
     return jsonify({'status': 'not running'})
+
+
+PACKETS_DIR = "packets"
+EXCEL_FILE = "packet_database.xlsx"
+
+@app.route("/get_excel")
+def get_excel():
+    return send_file(EXCEL_FILE, as_attachment=True)
+
+@app.route("/list_logs")
+def list_logs():
+    if not os.path.exists(EXCEL_FILE):
+        return jsonify([])
+
+    df = pd.read_excel(EXCEL_FILE)
+    logs = df.to_dict(orient="records")
+    return jsonify(logs)
+
+@app.route("/get_log")
+def get_log():
+    path = request.args.get("path")
+    if not path or not os.path.exists(path):
+        return jsonify({"error": "Invalid path"}), 400
+    with open(path, "r") as f:
+        return jsonify(json.load(f))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)

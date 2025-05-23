@@ -42,26 +42,65 @@
 		
 	</nav>
 
-  <div class="container">
-    <div class="device-card">
+  	<div class="container">
+		<div class="device-card">
 
-      <h1>Real-Time Packet Info</h1>
-      <div id="errorMsg"></div>
+		<h1>Real-Time Packet Info</h1>
+		<div id="errorMsg"></div>
 
-		<div>
-			<label>Filter Source IP: <input type="text" id="src_ip_filter" placeholder="e.g. 149.102"/></label>
-			<label>Filter Dest IP: <input type="text" id="dst_ip_filter" placeholder="e.g. 192.168"/></label>
-			<label>Filter Protocol: <input type="text" id="protocol_filter" placeholder="e.g. iperf3"/></label>
-			<button class="btn" onclick="loadPackets()">Apply Filter</button>
-			<button class="btn" onclick="startTest()">Start Test</button>
-			<button class="btn" onclick="stopTest()">Stop Test</button>
-			<div id="status"></div>
+			<div>
+				<label>Filter Source IP: <input type="text" id="src_ip_filter" placeholder="e.g. 149.102"/></label>
+				<label>Filter Dest IP: <input type="text" id="dst_ip_filter" placeholder="e.g. 192.168"/></label>
+				<label>Filter Protocol: <input type="text" id="protocol_filter" placeholder="e.g. iperf3"/></label>
+				<button class="btn" onclick="loadPackets()">Apply Filter</button>
+				<button class="btn" onclick="startTest()">Start Test</button>
+				<button class="btn" onclick="stopTest()">Stop Test</button>
+				<div id="status"></div>
+			</div>
+
+
+			<div class="scrollable">
+				
+				<table id="packetTable" style="margin-top: 15px; width: 100%;">
+					<thead>
+					<tr>
+						<th>Timestamp</th>
+						<th>Src IP</th>
+						<th>Src Hostname</th>
+						<th>Src Location</th>
+						<th>Src ASN</th>
+						<th>Src ISP</th>
+						<th>Src Port</th>
+						<th>Dst IP</th>
+						<th>Dst Hostname</th>
+						<th>Dst Location</th>
+						<th>Dst ASN</th>
+						<th>Dst ISP</th>
+						<th>Dst Port</th>
+						<th>Protocol</th>
+					</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+			</div>
+		
 		</div>
 
 
-		<div class="scrollable">
-			
-			<table id="packetTable" style="margin-top: 15px; width: 100%;">
+		<div class="device-card">
+			<h3>Filtered Log Table</h3>
+			<button class="btn" onclick="downloadExcel()">Download Excel Database</button>
+			<select id="logSelector" class="btn" onchange="loadLog()">
+				<option value="">-- Select a log --</option>
+			</select>
+			<h2></h2>
+			<label>Filter Source IP: <input type="text" id="log_src_ip_filter"></label>
+			<label>Filter Destination IP: <input type="text" id="log_dst_ip_filter"></label>
+			<label>Filter Protocol: <input type="text" id="log_protocol_filter"></label>
+			<button onclick="filterLogTable()">Apply Filter</button>
+
+			<div class="scrollable">
+			<table id="logTable" style="margin-top: 10px; width: 100%;">
 				<thead>
 				<tr>
 					<th>Timestamp</th>
@@ -82,11 +121,11 @@
 				</thead>
 				<tbody></tbody>
 			</table>
+			</div>
 		</div>
-      
-    </div>
-  </div>
+  	</div>
 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
     // Replace with your actual RPi1 Flask server IP and port
     const RPI_URL = 'http://172.16.20.137:5001/packets';
@@ -171,7 +210,74 @@
 
     // Auto-refresh every 5 seconds
     setInterval(loadPackets, 5000);
-    window.onload = loadPackets;
+
+	async function loadLogs() {
+      const res = await fetch('http://172.16.20.137:5001/list_logs');
+      const logs = await res.json();
+
+      const select = document.getElementById('logSelector');
+      logs.forEach(log => {
+        const option = document.createElement('option');
+        option.value = log['Full Path'];
+        option.textContent = `${log['Timestamp']} - ${log['JSON Filename']}`;
+        select.appendChild(option);
+      });
+    }
+
+    let loadedLogData = [];
+
+	async function loadLog() {
+		const path = document.getElementById('logSelector').value;
+		if (!path) return;
+
+		const res = await fetch(`http://172.16.20.137:5001/get_log?path=${encodeURIComponent(path)}`);
+		const data = await res.json();
+
+
+		// Store data globally
+		loadedLogData = Array.isArray(data) ? data : [data]; // handle both array or single object
+
+		// Populate table
+		populateLogTable(loadedLogData);
+	}
+
+	function populateLogTable(data) {
+		const tbody = document.querySelector("#logTable tbody");
+		tbody.innerHTML = "";
+
+		data.forEach(pkt => {
+		const row = tbody.insertRow();
+		[
+			"timestamp",
+			"src_ip", "src_hostname", "src_location", "src_asn", "src_isp", "src_port",
+			"dst_ip", "dst_hostname", "dst_location", "dst_asn", "dst_isp", "dst_port",
+			"protocol"
+		].forEach(key => {
+			const cell = row.insertCell();
+			cell.textContent = pkt[key] ?? '';
+		});
+		});
+	}
+
+	function filterLogTable() {
+		const srcFilter = document.getElementById("log_src_ip_filter").value.trim().toLowerCase();
+		const dstFilter = document.getElementById("log_dst_ip_filter").value.trim().toLowerCase();
+		const protoFilter = document.getElementById("log_protocol_filter").value.trim().toLowerCase();
+
+		const filtered = loadedLogData.filter(pkt =>
+		(!srcFilter || (pkt.src_ip && pkt.src_ip.toLowerCase().includes(srcFilter))) &&
+		(!dstFilter || (pkt.dst_ip && pkt.dst_ip.toLowerCase().includes(dstFilter))) &&
+		(!protoFilter || (pkt.protocol && pkt.protocol.toLowerCase().includes(protoFilter)))
+		);
+
+		populateLogTable(filtered);
+	}
+
+    function downloadExcel() {
+      window.open('http://172.16.20.137:5001/get_excel');
+    }
+
+    window.onload = loadLogs;
   </script>
 </body>
 </html>
