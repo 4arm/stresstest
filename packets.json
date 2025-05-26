@@ -1,0 +1,18 @@
+[
+    {
+    "timestamp": "2025-05-23 14:40:02",
+    "src_ip": "192.168.1.103",
+    "src_hostname": "No PTR",
+    "src_location": "Unknown, None",
+    "src_asn": "Unknown",
+    "src_isp": "Unknown",
+    "src_port": 63134,
+    "dst_ip": "8.8.8.8",
+    "dst_hostname": "dns.google",
+    "dst_location": "America/Chicago, United States",
+    "dst_asn": 15169,
+    "dst_isp": "GOOGLE",
+    "dst_port": 53,
+    "protocol": "DNS"
+  }
+]

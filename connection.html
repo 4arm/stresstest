@@ -109,73 +109,77 @@
 </table>
 
 <script>
-const communicationData = [
-  { src: "192.168.1.101", dst: "192.168.1.103", protocol: "TCP" },
-  { src: "192.168.1.101", dst: "192.168.1.103", protocol: "TCP" },
-  { src: "192.168.1.103", dst: "192.168.1.101", protocol: "HTTP (Flask)" },
-];
+// Fetch packets.json and populate the dashboard
+fetch('packets.json')
+  .then(response => response.json())
+  .then(data => {
+    const communicationData = Array.isArray(data) ? data : [data];
 
-const ipInfo = {
-  "192.168.1.101": {
-    country: "Private",
-    region: "LAN",
-    city: "-",
-    asn: "AS0",
-    isp: "Localhost"
-  },
-  "192.168.1.103": {
-    country: "Private",
-    region: "LAN",
-    city: "-",
-    asn: "AS0",
-    isp: "Localhost"
-  }
-};
+    const uniqueSrc = new Set(communicationData.map(e => e.src_ip));
+    const uniqueDst = new Set(communicationData.map(e => e.dst_ip));
+    const protocols = new Set(communicationData.map(e => e.protocol));
 
-// 1. Calculate unique counts
-const uniqueSrc = new Set(communicationData.map(e => e.src));
-const uniqueDst = new Set(communicationData.map(e => e.dst));
-const protocols = new Set(communicationData.map(e => e.protocol));
+    // Update summary
+    document.getElementById("srcCount").innerText = uniqueSrc.size;
+    document.getElementById("dstCount").innerText = uniqueDst.size;
+    document.getElementById("protocolsUsed").innerText = Array.from(protocols).join(", ");
 
-// 2. Update summary
-document.getElementById("srcCount").innerText = uniqueSrc.size;
-document.getElementById("dstCount").innerText = uniqueDst.size;
-document.getElementById("protocolsUsed").innerText = Array.from(protocols).join(", ");
+    // Fill communication table
+    const commTable = document.getElementById("commTable").querySelector("tbody");
+    communicationData.forEach(entry => {
+      const row = commTable.insertRow();
+      row.innerHTML = `
+        <td>${entry.src_ip}</td>
+        <td>${entry.dst_ip}</td>
+        <td>${entry.protocol}</td>
+      `;
+    });
 
-// 3. Fill communication table
-const commTable = document.getElementById("commTable").querySelector("tbody");
-communicationData.forEach(entry => {
-  const row = commTable.insertRow();
-  row.innerHTML = `
-    <td>${entry.src}</td>
-    <td>${entry.dst}</td>
-    <td>${entry.protocol}</td>
-  `;
-});
+    // Build IP info dictionary
+    const ipInfo = {};
+    communicationData.forEach(entry => {
+      ipInfo[entry.src_ip] = {
+        country: entry.src_location?.split(',')[0] || "Unknown",
+        region: entry.src_location?.split(',')[1]?.trim() || "-",
+        city: "-", // Not present in your structure
+        asn: entry.src_asn || "-",
+        isp: entry.src_isp || "-"
+      };
+      ipInfo[entry.dst_ip] = {
+        country: entry.dst_location?.split(',')[0] || "Unknown",
+        region: entry.dst_location?.split(',')[1]?.trim() || "-",
+        city: "-", // Not present in your structure
+        asn: entry.dst_asn || "-",
+        isp: entry.dst_isp || "-"
+      };
+    });
 
-// 4. Fill IP info table
-const ipInfoTable = document.getElementById("ipInfoTable").querySelector("tbody");
-const allIPs = new Set([...uniqueSrc, ...uniqueDst]);
+    // Fill IP info table
+    const ipInfoTable = document.getElementById("ipInfoTable").querySelector("tbody");
+    const allIPs = new Set([...uniqueSrc, ...uniqueDst]);
+    allIPs.forEach(ip => {
+      const info = ipInfo[ip] || {
+        country: "Unknown",
+        region: "-",
+        city: "-",
+        asn: "-",
+        isp: "-"
+      };
 
-allIPs.forEach(ip => {
-  const info = ipInfo[ip] || {
-    country: "Unknown",
-    region: "-",
-    city: "-",
-    asn: "-",
-    isp: "-"
-  };
-
-  const row = ipInfoTable.insertRow();
-  row.innerHTML = `
-    <td>${ip}</td>
-    <td>${info.country}</td>
-    <td>${info.region}</td>
-    <td>${info.city}</td>
-    <td>${info.asn}</td>
-    <td>${info.isp}</td>
-  `;
-});
+      const row = ipInfoTable.insertRow();
+      row.innerHTML = `
+        <td>${ip}</td>
+        <td>${info.country}</td>
+        <td>${info.region}</td>
+        <td>${info.city}</td>
+        <td>${info.asn}</td>
+        <td>${info.isp}</td>
+      `;
+    });
+  })
+  .catch(error => {
+    console.error("Error loading packets.json:", error);
+  });
 </script>
 
 </body>
