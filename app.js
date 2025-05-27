@@ -159,28 +159,102 @@ function startCountdown(duration, rpi_ip, notificationId, stressBtnId, stopBtnId
  	}, 1000);
 }
  
-function fetchStressReport() {
- 	const reportElement = document.getElementById("stress-report");
- 
- 	fetch(`http://${rpi_ip}:5000/stress_result`)
- 		.then(response => response.json())
- 		.then(data => {
- 			if (data.error) {
- 				reportElement.innerText = `Error: ${data.error}`;
- 			} else {
- 				reportElement.innerHTML = `
- 					<h3>Stress Test Report for ${rpi_ip}</h3>
- 					<p>Duration: ${data.report.duration}s</p>
- 					<p>CPU Usage: ${data.report.end.cpu_usage}%</p>
- 					<p>Temperature: ${data.report.end.temperature}°C</p>
- 				`;
- 			}
- 		})
- 		.catch(err => {
- 			console.log(err);
- 			reportElement.innerText = "Error fetching stress test report.";
- 		});
-}
+async function fetchStressReport() {
+      try {
+        const response = await fetch(`http://${rpi_ip}:5000/stress_result`);
+        const jsonData = await response.json();
+        renderCombinedChart(jsonData);
+      } catch (error) {
+        console.error('Failed to fetch or render data:', error);
+      }
+    }
+
+    function renderCombinedChart(data) {
+      const timestamps = data.data.timestamp;
+      const cpuData = data.data.cpu_usage;
+      const tempData = data.data.temperature;
+
+      const canvas = document.getElementById('combinedChart');
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        console.error("Canvas element not found or invalid");
+        return;
+      }
+
+      const ctx = canvas.getContext('2d');
+
+      // Clear previous chart if needed
+      if (window.combinedChartInstance) {
+        window.combinedChartInstance.destroy();
+      }
+
+      window.combinedChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: timestamps,
+          datasets: [
+            {
+              label: 'CPU Usage (%)',
+              data: cpuData,
+              borderColor: 'rgba(255, 99, 132, 1)',
+              yAxisID: 'y1',
+              fill: false,
+              tension: 0.3
+            },
+            {
+              label: 'Temperature (°C)',
+              data: tempData,
+              borderColor: 'rgba(54, 162, 235, 1)',
+              yAxisID: 'y2',
+              fill: false,
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          stacked: false,
+          scales: {
+            y1: {
+              type: 'linear',
+              position: 'left',
+              title: {
+                display: true,
+                text: 'CPU Usage (%)'
+              },
+              min: 0,
+              max: 100
+            },
+            y2: {
+              type: 'linear',
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Temperature (°C)'
+              },
+              min: 20,
+              max: 80,
+              grid: {
+                drawOnChartArea: false
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Timestamp'
+              },
+              ticks: {
+                maxRotation: 90,
+                minRotation: 45
+              }
+            }
+          }
+        }
+      });
+    }
  
 function fetchNetworkReport() {
  	const reportElement = document.getElementById("network-report");

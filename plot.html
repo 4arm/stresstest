@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Raspberry Pi Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    canvas {
+      max-width: 50%;
+      max-height: 80%;
+    }
+  </style>
+</head>
+<body>
+  <h2>CPU Usage and Temperature Over Time</h2>
+  <canvas id="combinedChart"></canvas>
+
+  <script>
+    const RPI_URL = "http://192.168.1.101/stress_result"; // Use your actual RPi IP
+
+    async function fetchData() {
+      const response = await fetch(RPI_URL);
+      const json = await response.json();
+      return json.data;
+    }
+
+    function renderCombinedChart(data) {
+      const labels = data.timestamp;
+
+      const chartData = {
+        labels: labels,
+        datasets: [
+          {
+            label: 'CPU Usage (%)',
+            data: data.cpu_usage,
+            borderColor: 'red',
+            backgroundColor: 'rgba(255,0,0,0.1)',
+            yAxisID: 'y1',
+            fill: false,
+            tension: 0.2
+          },
+          {
+            label: 'Temperature (°C)',
+            data: data.temperature,
+            borderColor: 'orange',
+            backgroundColor: 'rgba(255,165,0,0.1)',
+            yAxisID: 'y2',
+            fill: false,
+            tension: 0.2
+          }
+        ]
+      };
+
+      const config = {
+        type: 'line',
+        data: chartData,
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'CPU and Temperature'
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                autoSkip: true,
+                maxTicksLimit: 10
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'left',
+              title: {
+                display: true,
+                text: 'CPU Usage (%)'
+              },
+              beginAtZero: true
+            },
+            y2: {
+              type: 'linear',
+              position: 'right',
+              title: {
+                display: true,
+                text: 'Temperature (°C)'
+              },
+              beginAtZero: true,
+              grid: {
+                drawOnChartArea: false
+              }
+            }
+          }
+        }
+      };
+
+      new Chart(document.getElementById('combinedChart'), config);
+    }
+
+    fetchData().then(renderCombinedChart).catch(error => {
+      console.error("Failed to fetch data:", error);
+    });
+  </script>
+</body>
+</html>

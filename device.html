@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 <body>
 	
@@ -117,7 +119,7 @@
                     <button class="btn" id="stop-btn" onclick="stopTest(CPUtest)" disabled>Stop Test</button>
                     <button class="btn" onclick="fetchStressReport()">Stress Test Report</button>
                     <p id="notification"></p>
-                    <div id="stress-report" class="stress-report"></div>
+                    <canvas id="combinedChart" width="800" height="400"></canvas>
                 </div>
 
 				<!-- Network Test Card -->
