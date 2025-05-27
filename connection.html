@@ -60,6 +60,29 @@
       background: #007bff;
       color: white;
     }
+	.collapsible-header {
+	background-color: #007bff;
+	color: white;
+	padding: 10px 15px;
+	border-radius: 5px;
+	margin-top: 20px;
+	font-weight: normal;
+	display: inline-block;
+	transition: background-color 0.3s;
+	}
+
+	.collapsible-header:hover {
+	background-color: #0056b3;
+	}
+
+	.collapsible-header.active::before {
+	content: "▼ ";
+	}
+
+	.collapsible-header::before {
+	content: "▶ ";
+	}
+
   </style>
 </head>
 <body>
@@ -81,17 +104,21 @@
   </div>
 </div>
 
-<h2>Communication Map</h2>
-<table id="commTable">
-  <thead>
-    <tr>
-      <th>Source IP</th>
-      <th>Destination IP</th>
-      <th>Protocol</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<h2 class="collapsible-header" style="cursor: pointer; user-select: none;"> Communication Map</h2>
+<div class="collapsible-content" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out;">
+  <table id="commTable">
+    <thead>
+      <tr>
+        <th>Source IP</th>
+        <th>Destination IP</th>
+        <th>Protocol</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+
 
 <h2>IP Location and ASN</h2>
 <table id="ipInfoTable">
@@ -125,15 +152,30 @@ fetch('packets.json')
     document.getElementById("protocolsUsed").innerText = Array.from(protocols).join(", ");
 
     // Fill communication table
-    const commTable = document.getElementById("commTable").querySelector("tbody");
-    communicationData.forEach(entry => {
-      const row = commTable.insertRow();
-      row.innerHTML = `
-        <td>${entry.src_ip}</td>
-        <td>${entry.dst_ip}</td>
-        <td>${entry.protocol}</td>
-      `;
-    });
+	const commTable = document.getElementById("commTable").querySelector("tbody");
+	communicationData.forEach(entry => {
+	const row = commTable.insertRow();
+	row.innerHTML = `
+		<td>${entry.src_ip}</td>
+		<td>${entry.dst_ip}</td>
+		<td>${entry.protocol}</td>
+	`;
+	});
+
+
+	document.querySelector('.collapsible-header').addEventListener('click', function() {
+	this.classList.toggle('active');
+	const content = this.nextElementSibling;
+	
+	if (content.style.maxHeight && content.style.maxHeight !== "0px") {
+		// collapse
+		content.style.maxHeight = "0";
+	} else {
+		// expand
+		content.style.maxHeight = content.scrollHeight + "px";
+	}
+	});
+
 
     // Build IP info dictionary
     const ipInfo = {};

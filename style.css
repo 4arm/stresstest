@@ -467,3 +467,32 @@ position: relative;
 .footer{
 bottom: 0px;
 }
+
+.summary {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .summary-box {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      flex: 1;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      min-width: 200px;
+    }
+
+    .summary-box h3 {
+      margin: 0;
+      font-size: 20px;
+      color: #007bff;
+    }
+
+    .summary-box p {
+      color: #333;
+      font-size: 24px;
+      margin: 10px 0 0;
+      font-weight: bold;
+    }
