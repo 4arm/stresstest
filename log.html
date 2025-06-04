@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Stress Test Logs</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Stress Test Logs</h1>
+  <label for="statusFilter">Filter:</label>
+  <select id="statusFilter" onchange="loadLogs()">
+    <option value="All">All</option>
+    <option value="Pass">Pass</option>
+    <option value="Fail">Fail</option>
+  </select>
+  <ul id="logList"></ul>
+  <canvas id="logChart" width="400" height="200"></canvas>
+
+  <script>
+    async function loadLogs() {
+      const res = await fetch('/logs');
+      const logs = await res.json();
+      const filter = document.getElementById('statusFilter').value;
+      const list = document.getElementById('logList');
+      list.innerHTML = "";
+
+      logs.filter(log => filter === "All" || log.Status === filter)
+          .forEach(log => {
+        const li = document.createElement('li');
+        li.textContent = `${log.Timestamp} - ${log.Filename} (${log.Status})`;
+        li.onclick = () => viewGraph(log.Filename);
+        list.appendChild(li);
+      });
+    }
+
+    async function viewGraph(filename) {
+      const res = await fetch(`/log/${filename}`);
+      const data = await res.json();
+
+      const ctx = document.getElementById('logChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Start', 'End'],
+          datasets: [
+            {
+              label: 'CPU Usage (%)',
+              data: [data.start.cpu_usage, data.end.cpu_usage],
+              borderColor: 'red',
+              tension: 0.3
+            },
+            {
+              label: 'RAM Used (%)',
+              data: [data.start.ram_used, data.end.ram_used],
+              borderColor: 'blue',
+              tension: 0.3
+            },
+            {
+              label: 'Temperature (°C)',
+              data: [data.start.temperature, data.end.temperature],
+              borderColor: 'green',
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: filename
+            }
+          }
+        }
+      });
+    }
+
+    loadLogs();
+  </script>
+</body>
+</html>

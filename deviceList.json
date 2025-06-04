@@ -8,5 +8,10 @@
     "ip": "172.16.20.137",
     "name": "Monitor Tool",
     "location": "Table"
+  },
+  {
+    "ip": "172.16.20.182",
+    "name": "kali",
+    "location": "Mini Desktop"
   }
 ]

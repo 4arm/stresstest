@@ -9,6 +9,10 @@ import time
 import os
 import json
 import shutil
+import pandas as pd
+import glob
+import openpyxl
+
 
 
 app = Flask(__name__)
@@ -163,45 +167,129 @@ def store_cpu_test_data(duration):
 def data():
     return jsonify(get_system_info())
 
-@app.route('/stress', methods=['POST'])
-def stress_test():
-    global stress_running, stress_report
+DB_PATH = 'db.xlsx'
+DATA_DIR = 'data'
 
-    if stress_running:
-        return jsonify({"message": "Stress test is already running"}), 400
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR, exist_ok=True)
 
-    data = request.get_json()
-    duration = int(data.get("duration", 20))
+lock = threading.Lock()
+current_test_thread = None
+test_running = False
 
-    start_stats = get_system_info()
+def init_excel_db():
+    if not os.path.exists(DB_PATH):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Tests"
+        ws.append(["Test ID", "Filename", "Start Time", "Duration"])
+        wb.save(DB_PATH)
+
+init_excel_db()
+
+def add_test_to_db(file_path, start_time, duration):
+    wb = openpyxl.load_workbook(DB_PATH)
+    ws = wb["Tests"]
+    test_id = ws.max_row
+    ws.append([test_id, file_path, start_time, duration])
+    wb.save(DB_PATH)
+
+def run_stress_monitor(duration, result_file):
+    global test_running
+    results = []
+    test_running = True
+    start_time = time.time()
+
+    # Start stress-ng subprocess
+    stress_cmd = ['stress-ng', '--cpu', '4', '--timeout', f'{duration}s']
+    stress_proc = subprocess.Popen(stress_cmd)
 
     try:
-        stress_running = True
-        subprocess.Popen(["stress-ng", "--cpu", "4", "--timeout", f"{duration}s"])
-        store_cpu_test_data(duration)
+        while test_running and time.time() - start_time < duration:
+            cpu = psutil.cpu_percent(interval=1)
+            temps = psutil.sensors_temperatures()
+            temp = 0.0
+            if temps:
+                for key in temps:
+                    if temps[key]:
+                        temp = temps[key][0].current
+                        break
+            results.append({
+                "timestamp": datetime.now().isoformat(),
+                "cpu": cpu,
+                "temperature": temp
+            })
+    finally:
+        stress_proc.terminate()
+        stress_proc.wait()
+        with open(result_file, 'w') as f:
+            json.dump(results, f, indent=2)
+        os.chmod(result_file, 0o666)
+        test_running = False
 
-        end_stats = get_system_info()
+@app.route('/start_test', methods=['POST'])
+def start_test():
+    global current_test_thread, test_running
+    if test_running:
+        return jsonify({"status": "error", "message": "Test already running"}), 400
 
-        stress_report = {
-            "duration": duration,
-            "start": {
-                "cpu_usage": start_stats["cpu_usage"],
-                "ram_used": start_stats["ram_used"],
-                "temperature": start_stats["temperature"]
-            },
-            "end": {
-                "cpu_usage": end_stats["cpu_usage"],
-                "ram_used": end_stats["ram_used"],
-                "temperature": end_stats["temperature"]
-            },
-            "message": "Stress test completed!"
-        }
-        stress_running = False
-        return jsonify({"message": f"Stress test completed in {duration} seconds"}), 200
+    data = request.json
+    duration = int(data.get('duration', 20))
+    start_time_str = datetime.now().isoformat()
+    filename = os.path.join(DATA_DIR, f"test_{int(time.time())}.json")
 
-    except Exception as e:
-        stress_running = False
-        return jsonify({"error": str(e)}), 500
+    current_test_thread = threading.Thread(target=run_stress_monitor, args=(duration, filename))
+    current_test_thread.start()
+
+    with lock:
+        add_test_to_db(filename, start_time_str, duration)
+
+    return jsonify({"status": "started", "filename": filename})
+
+@app.route('/get_test_data')
+def get_test_data():
+    filename = request.args.get('filename')
+    if not filename or not os.path.exists(filename):
+        return jsonify({"status": "error", "message": "File not found"}), 404
+    return send_file(filename, mimetype='application/json')
+
+@app.route('/get_history')
+def get_cpu_history():
+    wb = openpyxl.load_workbook(DB_PATH)
+    ws = wb["Tests"]
+    history = []
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        history.append({
+            "id": row[0],
+            "file": row[1],
+            "start_time": row[2],
+            "duration": row[3]
+        })
+    return jsonify(history)
+
+    
+def save_stress_report_with_timestamp(report):
+    # Generate timestamp and count
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    filename = f"{timestamp}_CPUtest.json"
+
+    # Save report to unique JSON file
+    with open(filename, 'w') as f:
+        json.dump(report, f, indent=4)
+
+    # Record filename and timestamp in Excel
+    excel_file = "stress_records.xlsx"
+    try:
+        df = pd.read_excel(excel_file)
+    except FileNotFoundError:
+        df = pd.DataFrame(columns=["Timestamp", "Filename"])
+
+    df.loc[len(df.index)] = [timestamp, filename]
+    df.to_excel(excel_file, index=False)
+
+    return filename
+
 
 STRESS_RESULT_FILE = "stress_result.json"
 def append_to_stress_result(entry):

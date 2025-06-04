@@ -117,9 +117,11 @@
                     <input type="number" id="duration" placeholder="20" min="5" max="60"> sec
 					<button class="btn" id="stress-btn" onclick="stressTest()">Stress Test CPU</button>
                     <button class="btn" id="stop-btn" onclick="stopTest(CPUtest)" disabled>Stop Test</button>
-                    <button class="btn" onclick="fetchStressReport()">Stress Test Report</button>
+                    <select class="btn" id="testSelect">
+                        <option>Loading...</option>
+                    </select>
                     <p id="notification"></p>
-                    <canvas id="combinedChart" width="800" height="400"></canvas>
+                    <canvas id="comboChart" width="800" height="400"></canvas>
                 </div>
 
 				<!-- Network Test Card -->

@@ -1,113 +1,169 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Raspberry Pi Monitor</title>
+  <title>Stress Test Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    canvas {
-      max-width: 50%;
-      max-height: 80%;
-    }
-  </style>
 </head>
 <body>
-  <h2>CPU Usage and Temperature Over Time</h2>
-  <canvas id="combinedChart"></canvas>
+  <h1>Stress Test Control Panel</h1>
+  
+  <label>Test Duration (seconds):</label>
+  <input type="number" id="duration" value="20">
+  <button onclick="startTest()">Start Test</button>
+  <button onclick="loadHistory()">Load History</button>
+
+  <h2>Current Test Graph</h2>
+  <canvas id="cpuChart"></canvas>
+  <canvas id="tempChart"></canvas>
+
+  <h2>Test History</h2>
+  <ul id="historyList"></ul>
+
+   <h2>Stress Test Viewer</h2>
+
+  <label for="testSelect">Select Test:</label>
+  <select id="testSelect">
+    <option>Loading...</option>
+  </select>
+
+  <canvas id="comboChart" width="800" height="400"></canvas>
 
   <script>
-    const RPI_URL = "http://192.168.1.101/stress_result"; // Use your actual RPi IP
+    let cpuChart, tempChart;
 
-    async function fetchData() {
-      const response = await fetch(RPI_URL);
-      const json = await response.json();
-      return json.data;
+    function startTest() {
+      const duration = document.getElementById("duration").value;
+      fetch('http://172.16.20.137:5003/start_test', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({duration})
+      }).then(res => res.json()).then(data => {
+        loadTestResult(data.filename);
+      });
     }
 
-    function renderCombinedChart(data) {
-      const labels = data.timestamp;
+    function loadTestResult(filename) {
+      fetch(`http://172.16.20.137:5003/get_test_data/${filename}`).then(res => res.json()).then(data => {
+        const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+        const cpuData = data.map(d => d.cpu);
+        const tempData = data.map(d => d.temperature);
 
-      const chartData = {
-        labels: labels,
-        datasets: [
-          {
-            label: 'CPU Usage (%)',
-            data: data.cpu_usage,
-            borderColor: 'red',
-            backgroundColor: 'rgba(255,0,0,0.1)',
-            yAxisID: 'y1',
-            fill: false,
-            tension: 0.2
-          },
-          {
-            label: 'Temperature (°C)',
-            data: data.temperature,
-            borderColor: 'orange',
-            backgroundColor: 'rgba(255,165,0,0.1)',
-            yAxisID: 'y2',
-            fill: false,
-            tension: 0.2
+        if (cpuChart) cpuChart.destroy();
+        if (tempChart) tempChart.destroy();
+
+        cpuChart = new Chart(document.getElementById('cpuChart'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{ label: 'CPU %', data: cpuData, borderColor: 'blue', fill: false }]
           }
-        ]
-      };
+        });
 
-      const config = {
+        tempChart = new Chart(document.getElementById('tempChart'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{ label: 'Temperature (°C)', data: tempData, borderColor: 'red', fill: false }]
+          }
+        });
+      });
+    }
+
+   
+
+	const backendURL = "http://172.16.20.137:5003"; // ← CHANGE THIS
+
+    const testSelect = document.getElementById("testSelect");
+    const comboCtx = document.getElementById("comboChart").getContext("2d");
+
+    let comboChart;
+
+    async function loadHistory() {
+      const res = await fetch(`${backendURL}/get_history`);
+      const history = await res.json();
+      testSelect.innerHTML = '';
+      history.forEach(test => {
+        const opt = document.createElement("option");
+        opt.value = test.file;
+        opt.textContent = `Test ${test.id} - ${test.start_time} (${test.duration}s)`;
+        testSelect.appendChild(opt);
+      });
+
+      if (history.length > 0) {
+        loadTestData(history[0].file);
+      }
+    }
+
+    async function loadTestData(filename) {
+      const res = await fetch(`${backendURL}/get_test_data?filename=${encodeURIComponent(filename)}`);
+      const data = await res.json();
+
+      const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+      const cpu = data.map(d => d.cpu);
+      const temp = data.map(d => d.temperature);
+
+      if (comboChart) comboChart.destroy();
+
+      comboChart = new Chart(comboCtx, {
         type: 'line',
-        data: chartData,
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'CPU Usage (%)',
+              data: cpu,
+              borderColor: 'blue',
+              backgroundColor: 'rgba(0,0,255,0.1)',
+              yAxisID: 'yCPU',
+              tension: 0.3
+            },
+            {
+              label: 'Temperature (°C)',
+              data: temp,
+              borderColor: 'red',
+              backgroundColor: 'rgba(255,0,0,0.1)',
+              yAxisID: 'yTemp',
+              tension: 0.3
+            }
+          ]
+        },
         options: {
           responsive: true,
           interaction: {
             mode: 'index',
             intersect: false
           },
+          scales: {
+            yCPU: {
+              type: 'linear',
+              position: 'left',
+              title: { display: true, text: 'CPU (%)' },
+              min: 0,
+              max: 100
+            },
+            yTemp: {
+              type: 'linear',
+              position: 'right',
+              title: { display: true, text: 'Temp (°C)' },
+              grid: { drawOnChartArea: false }
+            }
+          },
           plugins: {
             title: {
               display: true,
-              text: 'CPU and Temperature'
-            }
-          },
-          scales: {
-            x: {
-              ticks: {
-                autoSkip: true,
-                maxTicksLimit: 10
-              }
-            },
-            y1: {
-              type: 'linear',
-              position: 'left',
-              title: {
-                display: true,
-                text: 'CPU Usage (%)'
-              },
-              beginAtZero: true
-            },
-            y2: {
-              type: 'linear',
-              position: 'right',
-              title: {
-                display: true,
-                text: 'Temperature (°C)'
-              },
-              beginAtZero: true,
-              grid: {
-                drawOnChartArea: false
-              }
+              text: 'CPU & Temperature Over Time'
             }
           }
         }
-      };
-
-      new Chart(document.getElementById('combinedChart'), config);
+      });
     }
 
-    fetchData().then(renderCombinedChart).catch(error => {
-      console.error("Failed to fetch data:", error);
+    testSelect.addEventListener("change", () => {
+      const filename = testSelect.value;
+      if (filename) loadTestData(filename);
     });
+
+    loadHistory();
   </script>
 </body>
 </html>

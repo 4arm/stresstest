@@ -19,7 +19,13 @@ const writeSpeedGauge = document.getElementById('write_speed');
 const stressStatus = document.getElementById("stress-status");
 const networkStatus = document.getElementById("network-status");
  
- 
+const CPUtest = {
+ 	rpi_ip: rpi_ip,
+ 	notificationId: "notification",
+ 	stressBtnId: "stress-btn",
+ 	stopBtnId: "stop-btn"
+};
+
 function updateGauge() {
  
  	fetch(`http://${rpi_ip}:5000/data`)
@@ -98,24 +104,142 @@ function stressTest() {
  
  	startCountdown(duration, rpi_ip, "notification", "stress-btn", "stop-btn");
  
- 	fetch(`http://${rpi_ip}:5000/stress`, {
- 			method: "POST",
- 			headers: { "Content-Type": "application/json" },
- 			body: JSON.stringify({ duration })
- 		})
- 		.then(response => response.json())
- 		.then(data => {
- 			notification.innerText = data.message;
- 		})
- 		.catch(err => console.log(err));
+ 	fetch(`http://${rpi_ip}:5000/start_test`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({duration})
+      }).then(res => res.json()).then(data => {
+        loadTestResult(data.filename);
+      });
 }
+
+function loadTestResult(filename) {
+      fetch(`http://${rpi_ip}:5000/get_test_data/${filename}`).then(res => res.json()).then(data => {
+        const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+        const cpuData = data.map(d => d.cpu);
+        const tempData = data.map(d => d.temperature);
+
+        if (cpuChart) cpuChart.destroy();
+        if (tempChart) tempChart.destroy();
+
+        cpuChart = new Chart(document.getElementById('cpuChart'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{ label: 'CPU %', data: cpuData, borderColor: 'blue', fill: false }]
+          }
+        });
+
+        tempChart = new Chart(document.getElementById('tempChart'), {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{ label: 'Temperature (°C)', data: tempData, borderColor: 'red', fill: false }]
+          }
+        });
+      });
+    }
+
+const backendURL = `http://${rpi_ip}:5000`; // ← CHANGE THIS
+
+    const testSelect = document.getElementById("testSelect");
+    const comboCtx = document.getElementById("comboChart").getContext("2d");
+
+    let comboChart;
+
+    async function loadHistory() {
+      const res = await fetch(`${backendURL}/get_history`);
+      const history = await res.json();
+      testSelect.innerHTML = '';
+      history.forEach(test => {
+        const opt = document.createElement("option");
+        opt.value = test.file;
+        opt.textContent = `Test ${test.id} - ${test.start_time} (${test.duration}s)`;
+        testSelect.appendChild(opt);
+      });
+
+      if (history.length > 0) {
+        loadTestData(history[0].file);
+      }
+    }
+
+    async function loadTestData(filename) {
+      const res = await fetch(`${backendURL}/get_test_data?filename=${encodeURIComponent(filename)}`);
+      const data = await res.json();
+
+      const labels = data.map(d => new Date(d.timestamp).toLocaleTimeString());
+      const cpu = data.map(d => d.cpu);
+      const temp = data.map(d => d.temperature);
+
+      if (comboChart) comboChart.destroy();
+
+      comboChart = new Chart(comboCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'CPU Usage (%)',
+              data: cpu,
+              borderColor: 'green',
+              backgroundColor: 'rgba(0,0,255,0.1)',
+              yAxisID: 'yCPU',
+              tension: 0.3
+            },
+            {
+              label: 'Temperature (°C)',
+              data: temp,
+              borderColor: 'red',
+              backgroundColor: 'rgba(255,0,0,0.1)',
+              yAxisID: 'yTemp',
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          scales: {
+            yCPU: {
+              type: 'linear',
+              position: 'left',
+              title: { display: true, text: 'CPU (%)' },
+              min: 0,
+              max: 100
+            },
+            yTemp: {
+              type: 'linear',
+              position: 'right',
+              title: { display: true, text: 'Temp (°C)' },
+              grid: { drawOnChartArea: false }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: `CPU & Temperature Over Time file: ${filename}`
+            }
+          }
+        }
+      });
+    }
+
+    testSelect.addEventListener("change", () => {
+      const filename = testSelect.value;
+      if (filename) loadTestData(filename);
+    });
+
+    loadHistory();
  
 function stopTest(ctx) {
  	const { rpi_ip, notificationId, stressBtnId, stopBtnId } = ctx;
  	const notification = document.getElementById(notificationId);
  	const stressButton = document.getElementById(stressBtnId);
  	const stopButton = document.getElementById(stopBtnId);
- 
+	
  	fetch(`http://${rpi_ip}:5000/stop_stress`, { method: "POST" })
  		.then(response => response.json())
  		.then(data => {
